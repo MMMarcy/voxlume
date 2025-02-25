@@ -45,3 +45,20 @@ pub enum SourcePlatform {
     #[cfg_attr(feature = "ssr", sea_orm(string_value = "gitlab"))]
     Gitlab = 2,
 }
+
+#[derive(Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Debug)]
+#[cfg_attr(feature = "ssr", derive(DeriveIden, EnumIter, DeriveActiveEnum))]
+#[cfg_attr(
+    feature = "ssr",
+    sea_orm(rs_type = "String", db_type = "Enum", enum_name = "language")
+)]
+pub enum Language {
+    #[cfg_attr(feature = "ssr", sea_orm(string_value = "unknown"))]
+    Unknown = 0,
+
+    #[cfg_attr(feature = "ssr", sea_orm(string_value = "english"))]
+    English = 1,
+
+    #[cfg_attr(feature = "ssr", sea_orm(string_value = "italian"))]
+    Italian = 2,
+}

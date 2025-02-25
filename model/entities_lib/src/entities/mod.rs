@@ -9,6 +9,8 @@ pub mod change_list;
 
 pub mod user;
 
+pub mod book;
+
 /// Client shouldn't have any visibility of oauth tokens at all.
 #[cfg(feature = "ssr")]
 pub mod oauth_token;
