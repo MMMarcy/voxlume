@@ -1,0 +1,29 @@
+# Module that contains all the implementations that are used only by
+# the server. Specifically, only when compiling using `ssr` feature.
+[package]
+name = "shared"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+leptos = { workspace = true, features = ["ssr"] }
+leptos_axum = { workspace = true }
+leptos_router = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
+
+anyhow = { workspace = true }
+axum = { workspace = true, features = ["macros"] }
+axum_session = { workspace = true }
+axum_session_auth = { workspace = true }
+axum_session_sqlx = { workspace = true }
+sha3 = { workspace = true }
+tracing = { workspace = true }
+rand = { workspace = true }
+indoc = { workspace = true }
+reqwest = { workspace = true, features = ["json", "stream"] }
+futures-util = { workspace = true }
+base64 = { workspace = true }
+markdown = { workspace = true }
+strfmt = { workspace = true }

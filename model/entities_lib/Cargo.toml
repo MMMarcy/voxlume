@@ -1,0 +1,28 @@
+[package]
+name = "entities_lib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow.workspace = true
+cfg-if = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+derive_more.workspace = true
+futures.workspace = true
+prost.workspace = true
+sea-orm = { workspace = true, optional = true }
+serde.workspace = true
+serde_json.workspace = true
+shaku.workspace = true
+uuid = { workspace = true, features = ["serde"] }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+googletest = { workspace = true }
+test-log = { workspace = true }
+sea-orm = { workspace = true, features = ["mock"] }
+tokio = { workspace = true, features = ["macros", "test-util"] }
+
+[features]
+default = []
+ssr = ["dep:sea-orm"]
