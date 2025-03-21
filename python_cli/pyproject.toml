@@ -10,6 +10,7 @@ dependencies = [
     "beautifulsoup4>=4.13.3",
     "langchain>=0.3.21",
     "langchain-google-genai>=2.1.0",
+    "loguru>=0.7.3",
     "neo4j>=5.28.1",
     "pydantic>=2.10.6",
     "requests>=2.32.3",

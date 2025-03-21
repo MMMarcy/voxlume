@@ -1,20 +1,27 @@
 """Entrypoint."""
 
 from collections.abc import Callable
-from typing import Any, Type, TypeVar, cast
+from queue import LifoQueue
+from typing import TypeVar, cast
 
 import requests
 from absl import app, flags
+from bs4 import BeautifulSoup
 from langchain_core.language_models import BaseLanguageModel, LanguageModelInput
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import Runnable
 from langchain_google_genai import ChatGoogleGenerativeAI
+from loguru import logger
 from neo4j import Driver, GraphDatabase
 from pydantic import BaseModel
 from rich.pretty import pprint
 
-from python_cli.entities import AudioBookMetadata, NewSubmissionList
-from bs4 import BeautifulSoup
+from python_cli.entities import (
+    AudioBookMetadata,
+    NewSubmissionList,
+    QueueItem,
+    QueueItemType,
+)
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -129,41 +136,61 @@ def main(argv: list[str]) -> None:
     """Main entrypoint."""
     del argv
 
+    queue: LifoQueue[QueueItem] = LifoQueue()
     neo4j = get_driver()
     llm = get_base_llm()
-
     parse_new_entries_page_llm = llm.with_structured_output(
         NewSubmissionList, include_raw=True
     )
-
     parse_book_page_llm = llm.with_structured_output(
         AudioBookMetadata, include_raw=True
     )
 
-    page_range = range(_PAGE_START.value, _PAGE_END.value)
     url_template = f"{_BASE_URL.value}/member/index?pid="
 
-    for page in page_range:
+    for page in range(_PAGE_END.value, _PAGE_START.value - 1, -1):
         actual_url = f"{url_template}{page}"
-        pprint(actual_url)
-        submission_list: NewSubmissionList | None = retrieve_and_parse_page(
-            url=actual_url,
-            llm=parse_new_entries_page_llm,
-            filtering_fn=extract_only_new_submissions_table,
-        )
-        if submission_list is None:
-            raise RuntimeError()
-        for submission in submission_list.submissions:
-            book_page = f"{_BASE_URL.value}/{submission.url}"
-            audiobook_metadata = retrieve_and_parse_page(
-                url=book_page,
-                llm=parse_book_page_llm,
-                filtering_fn=extract_only_post_info,
+        queue.put(
+            QueueItem(
+                queue_item_type=QueueItemType.PAGE_WITH_NEW_ENTRIES, url=actual_url
             )
-            if audiobook_metadata:
-                pprint(audiobook_metadata.model_dump())
-            break
-        break
+        )
+    logger.info("Finished adding main pages to queue.")
+
+    while not queue.empty():
+        logger.info(f"Getting item from queue. Queue size: {queue.qsize()}")
+        queue_item = queue.get()
+        match queue_item.queue_item_type:
+            case QueueItemType.PAGE_WITH_NEW_ENTRIES:
+                logger.info(f"Parsing page with new entries. URL = {queue_item.url}")
+                submission_list: NewSubmissionList | None = retrieve_and_parse_page(
+                    url=queue_item.url,
+                    llm=parse_new_entries_page_llm,
+                    filtering_fn=extract_only_new_submissions_table,
+                )
+                if submission_list is None:
+                    raise RuntimeError()
+                for submission in submission_list.submissions:
+                    queue.put(
+                        QueueItem(
+                            queue_item_type=QueueItemType.PAGE_WITH_AUDIOBOOK_METADATA,
+                            url=f"{_BASE_URL.value}/{submission.url}",
+                        )
+                    )
+            case QueueItemType.PAGE_WITH_AUDIOBOOK_METADATA:
+                logger.info(
+                    f"Parsing page with audiobook metadata. URL = {queue_item.url}"
+                )
+                audiobook_metadata = retrieve_and_parse_page(
+                    url=queue_item.url,
+                    llm=parse_book_page_llm,
+                    filtering_fn=extract_only_post_info,
+                )
+                if audiobook_metadata:
+                    pprint(audiobook_metadata.model_dump())
+
+    while not queue.empty():
+        pprint(queue.get())
 
 
 def _main() -> None:

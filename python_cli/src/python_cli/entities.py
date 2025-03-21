@@ -1,5 +1,6 @@
 """Entities used by the CLIs."""
 
+from enum import Enum
 from textwrap import dedent
 
 from pydantic import BaseModel, Field
@@ -53,7 +54,7 @@ class AudioBookMetadata(BaseModel):
     )
 
     bitrate: str | None = Field(
-        description="The bitrate used to save the audio file for this audiobook if present.",
+        description="The bitrate used in the audio file for this audiobook if present.",
         default=None,
     )
 
@@ -70,3 +71,17 @@ class AudioBookMetadata(BaseModel):
     runtime: str | None = Field(
         description="The runtime lenght of the audiobook if present.", default=None
     )
+
+
+class QueueItemType(Enum):
+    """The type of item in the queue."""
+
+    PAGE_WITH_NEW_ENTRIES = 1
+    PAGE_WITH_AUDIOBOOK_METADATA = 2
+
+
+class QueueItem(BaseModel):
+    """Item for the scraping queue."""
+
+    queue_item_type: QueueItemType = Field(description="The type of the queue item.")
+    url: str = Field(description="The url to scrape.")
