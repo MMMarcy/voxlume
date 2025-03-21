@@ -63,6 +63,10 @@ class AudioBookMetadata(BaseModel):
 
     description: str = Field(description="The description of this audiobook.")
 
+    file_size: str | None = Field(
+        description="The file size if available", default=None
+    )
+
     runtime: str | None = Field(
         description="The runtime lenght of the audiobook if present.", default=None
     )

@@ -1,14 +1,22 @@
 """Entrypoint."""
 
-from typing import cast
+from collections.abc import Callable
+from typing import Any, Type, TypeVar, cast
 
 import requests
 from absl import app, flags
+from langchain_core.language_models import BaseLanguageModel, LanguageModelInput
+from langchain_core.messages import AIMessage
+from langchain_core.runnables import Runnable
 from langchain_google_genai import ChatGoogleGenerativeAI
 from neo4j import Driver, GraphDatabase
+from pydantic import BaseModel
+from rich.pretty import pprint
 
 from python_cli.entities import AudioBookMetadata, NewSubmissionList
-from rich.pretty import pprint
+from bs4 import BeautifulSoup
+
+T = TypeVar("T", bound=BaseModel)
 
 _BASE_URL = flags.DEFINE_string(
     name="base_url",
@@ -73,17 +81,56 @@ def get_user_agent() -> str:
     )
 
 
+def get_base_llm(
+    model_id: str = "gemini-2.0-flash-001",
+    temperature: int = 0,
+    max_tokens: int = 2_000_000,
+    max_output_tokens: int = 8192,
+) -> BaseLanguageModel:
+    """Creates a base LLM."""
+    return ChatGoogleGenerativeAI(
+        model=model_id,
+        temperature=temperature,
+        max_tokens=max_tokens,
+        max_output_tokens=max_output_tokens,  # type: ignore
+    )
+
+
+def extract_only_post_info(body: str) -> str:
+    """Returns only audiobook info."""
+    soup = BeautifulSoup(body, features="html.parser")
+    return str(soup.select_one(".post"))
+
+
+def extract_only_new_submissions_table(body: str) -> str:
+    """Returns only the HTML of the table containing the new audiobooks."""
+    soup = BeautifulSoup(body, features="html.parser")
+    return str(soup.select_one(".main_table"))
+
+
+def retrieve_and_parse_page(
+    url: str,
+    llm: Runnable[
+        LanguageModelInput, dict[str, AIMessage | type[T] | None] | BaseModel
+    ],
+    filtering_fn: Callable[[str], str] = str,
+) -> T | None:
+    """Sends a GET requests and then uses the runnable to get the structured data."""
+    http_response = requests.get(  # noqa: S113
+        url, allow_redirects=True, headers={"User-Agent": get_user_agent()}
+    )
+    body = filtering_fn(http_response.text)
+    llm_response = cast("dict", llm.invoke([*messages, ("human", body)]))
+    parsed_response = llm_response["parsed"]
+    return cast("T", parsed_response)
+
+
 def main(argv: list[str]) -> None:
     """Main entrypoint."""
     del argv
 
-    get_driver()
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.0-flash-001",
-        temperature=0,
-        max_tokens=2_000_000,
-        max_output_tokens=8192,  # type: ignore
-    )
+    neo4j = get_driver()
+    llm = get_base_llm()
 
     parse_new_entries_page_llm = llm.with_structured_output(
         NewSubmissionList, include_raw=True
@@ -99,29 +146,22 @@ def main(argv: list[str]) -> None:
     for page in page_range:
         actual_url = f"{url_template}{page}"
         pprint(actual_url)
-        get_response = requests.get(  # noqa: S113
-            actual_url,
-            allow_redirects=True,
-            headers={"User-Agent": get_user_agent()},
+        submission_list: NewSubmissionList | None = retrieve_and_parse_page(
+            url=actual_url,
+            llm=parse_new_entries_page_llm,
+            filtering_fn=extract_only_new_submissions_table,
         )
-        body = get_response.text
-        response: dict = cast(
-            "dict", parse_new_entries_page_llm.invoke([*messages, ("human", body)])
-        )
-
-        submission_list: NewSubmissionList = response["parsed"]
+        if submission_list is None:
+            raise RuntimeError()
         for submission in submission_list.submissions:
             book_page = f"{_BASE_URL.value}/{submission.url}"
-            book_response = requests.get(
-                book_page,
-                allow_redirects=True,
-                headers={"User-Agent": get_user_agent()},
+            audiobook_metadata = retrieve_and_parse_page(
+                url=book_page,
+                llm=parse_book_page_llm,
+                filtering_fn=extract_only_post_info,
             )
-            book_metadata: dict = cast(
-                "dict",
-                parse_book_page_llm.invoke([*messages, ("human", book_response.text)]),
-            )
-            pprint(book_metadata["parsed"].model_dump())
+            if audiobook_metadata:
+                pprint(audiobook_metadata.model_dump())
             break
         break
 
