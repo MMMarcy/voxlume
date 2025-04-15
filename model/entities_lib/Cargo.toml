@@ -9,20 +9,21 @@ cfg-if = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 derive_more.workspace = true
 futures.workspace = true
+neo4rs = { workspace = true, optional = true }
 prost.workspace = true
-sea-orm = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
 shaku.workspace = true
+strum = { workspace = true }
+strum_macros = { workspace = true }
 uuid = { workspace = true, features = ["serde"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]
 googletest = { workspace = true }
 test-log = { workspace = true }
-sea-orm = { workspace = true, features = ["mock"] }
 tokio = { workspace = true, features = ["macros", "test-util"] }
 
 [features]
 default = []
-ssr = ["dep:sea-orm"]
+ssr = ["dep:neo4rs"]
