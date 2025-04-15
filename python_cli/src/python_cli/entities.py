@@ -33,9 +33,7 @@ class NewSubmissionList(BaseModel):
 class AudioBookMetadata(BaseModel):
     """The metadata about the audiobook."""
 
-    title: str = Field(
-        description="The title of the book."
-    )
+    title: str = Field(description="The title of the book.")
     categories: list[str] = Field(
         description="The categories this book has been categorized into."
     )
@@ -46,7 +44,7 @@ class AudioBookMetadata(BaseModel):
 
     cover_url: str = Field(description="The url of the cover image.")
 
-    author: str = Field(description="The name of author of this audiobook.")
+    authors: list[str] = Field(description="The names of authors of this audiobook.")
 
     read_by: str = Field(
         description="The name of the voice actor that read this audiobook."
@@ -80,15 +78,14 @@ class AudioBookMetadata(BaseModel):
         default=False,
     )
 
-    series: str | None = Field(
-        description="The title of the series.",
-        default=None
-    )
+    series: str | None = Field(description="The title of the series.", default=None)
 
     series_volume: str | None = Field(
-        description=dedent("The sequential number of the volume in the series. "
-                           "Only populated if the series is present"),
-        default=None
+        description=dedent(
+            "The sequential number of the volume in the series. "
+            "Only populated if the series is present"
+        ),
+        default=None,
     )
 
 

@@ -8,6 +8,30 @@ from python_cli.entities import AudioBookMetadata
 _PATH_PROPERTY_NAME = "path"
 
 
+def _save_author_and_get_id(
+    tx: neo4j.Transaction, author_name: str, audiobook_id: str
+) -> str:
+    query_main = """
+        MATCH (ab:Audiobook) WHERE elementId(ab) = $audiobook_id
+        MERGE (author:Author {name: $author_name})
+        MERGE (ab)-[:WRITTEN_BY]->(author)
+        RETURN elementId(author) AS author_id
+        """
+    result = tx.run(query_main, author_name=author_name, audiobook_id=audiobook_id)
+
+    # Get the internal Neo4j ID of the created audiobook for linking the series
+    record = result.single()
+    if not record:
+        raise RuntimeError("Failed to create Audiobook node or retrieve its ID.")  # noqa: TRY003
+    author_id = record["author_id"]  # Keep author_id in case needed elsewhere
+    logger.info(
+        "Created/Merged Author '{author_name}' with audiobook '{audiobook_id}'",
+        author_name=author_name,
+        audiobook_id=audiobook_id,
+    )
+    return str(author_id)
+
+
 def _create_audiobook_and_relations_tx(
     tx: neo4j.Transaction, metadata: AudioBookMetadata, path: str
 ) -> None:
@@ -17,10 +41,8 @@ def _create_audiobook_and_relations_tx(
     and optionally series information.
     Designed to be used with session.execute_write().
     """
-    log = logger
-
     audiobook_props = metadata.model_dump(
-        exclude={"author", "is_part_of_series", "series", "series_volume", "read_by"}
+        exclude={"authors", "is_part_of_series", "series", "series_volume", "read_by"}
     )
     # Adds the path to the properties of the audiobook
     audiobook_props[_PATH_PROPERTY_NAME] = path
@@ -33,77 +55,68 @@ def _create_audiobook_and_relations_tx(
         # Ensure it's explicitly null if not part of series or volume is None
         audiobook_props["series_volume"] = None
 
-    log.debug(
+    logger.debug(
         "Audiobook properties for Cypher: {audiobook_props}",
         audiobook_props=audiobook_props,
     )
-
-    # 1. MERGE Author node (creates if not exists, matches if exists)
-    # 2. CREATE Audiobook node (always create a new one)
-    # 3. Set Audiobook properties
-    # 4. MERGE relationships between Author and Audiobook
-    query_main = """
-    MERGE (author:Author {name: $author_name})
-    MERGE (reader:Reader {name: $reader_name})
+    query_create_audiobook = """
     CREATE (ab:Audiobook)
     SET ab = $audiobook_props
-    MERGE (ab)-[:WRITTEN_BY]->(author)
+    MERGE (reader:Reader {name: $reader_name})
     MERGE (ab)-[:READ_BY]->(reader)
-    RETURN elementId(ab) AS audiobook_id, elementId(author) AS author_id
+    RETURN elementId(ab) AS audiobook_id
     """
     result = tx.run(
-        query_main,
-        author_name=metadata.author,
+        query_create_audiobook,
         audiobook_props=audiobook_props,
         reader_name=metadata.read_by,
     )
-
-    # Get the internal Neo4j ID of the created audiobook for linking the series
     record = result.single()
     if not record:
-        raise RuntimeError("Failed to create Audiobook node or retrieve its ID.")  # noqa: TRY003
+        raise RuntimeError()
     audiobook_id = record["audiobook_id"]
-    author_id = record["author_id"]  # Keep author_id in case needed elsewhere
-    log.info(
-        "Created/Merged Author ID: {author_id}, Created Audiobook ID: {audiobook_id}",
-        author_id=author_id,
-        audiobook_id=audiobook_id,
-    )
+
+    author_ids = [
+        _save_author_and_get_id(tx, name, audiobook_id) for name in metadata.authors
+    ]
 
     # 5. Check if series information is present
     if metadata.is_part_of_series and metadata.series:
-        log.info("Handling series: {series}", series=metadata.series)
-        # 6. MERGE Series node (unique by title *for this author*)
-        # 7. MERGE relationships between Author and Series
-        # 8. MERGE relationships between Series and the newly created Audiobook
-        # We MATCH the author and audiobook using their known identifiers/properties
-        # to ensure we link the correct nodes. Using the internal ID is safest.
-        query_series = """
-        MATCH (author:Author) WHERE id(author) = $author_id
-        MATCH (ab:Audiobook) WHERE id(ab) = $audiobook_id
+        logger.info("Handling series: {series}", series=metadata.series)
 
-        // Merge the series node - only based on title for simplicity,
-        // but linking it to the author ensures context if needed later.
-        MERGE (series:S
-        eries {title: $series_title})
+        merge_series = """
+        // Get the audiobook
+        MATCH (ab:Audiobook) WHERE elementId(ab) = $audiobook_id
 
-        // Merge relationships Author <-> Series
-        MERGE (author)-[:AUTHORED_SERIES]->(series)
-        MERGE (series)-[:WRITTEN_BY_SERIES]->(author)
+        // Save the series if it's not there.
+        MERGE (series:Series {title: $series_title})
 
         // Merge relationships Series <-> Audiobook
-        MERGE (series)-[:COMPOSED_BY]->(ab)
         MERGE (ab)-[:PART_OF_SERIES]->(series)
 
-        // Note: series_volume was already set on the Audiobook node in the first query
+        RETURN elementId(series) AS series_id
         """
-        tx.run(
-            query_series,
-            author_id=author_id,
-            audiobook_id=audiobook_id,
-            series_title=metadata.series,
+        result = tx.run(
+            merge_series, audiobook_id=audiobook_id, series_title=metadata.series
         )
-        log.info(
+        record = result.single()
+        if not record:
+            raise RuntimeError()
+        series_id = record["series_id"]
+        query_series = """
+        MATCH (author:Author) WHERE elementId(author) = $author_id
+        MATCH (series:Series) WHERE elementId(series) = $series_id
+
+        // Link author with series
+        MERGE (series)-[:WRITTEN_BY_SERIES]->(author)
+        """
+        for author_id in author_ids:
+            tx.run(
+                query_series,
+                author_id=author_id,
+                series_id=series_id,
+            )
+        logger.info(
             "Linked Audiobook ID {audiobook_id} to Series '{series}'",
             audiobook_id=audiobook_id,
             series=metadata.series,
@@ -118,16 +131,19 @@ def store_audiobook_in_neo4j(
     Args:
         driver: An initialized neo4j.Driver instance.
         metadata: An AudioBookMetadata object containing the data.
+        path: The path used by audiobookbay.
     """
     try:
         with driver.session() as session:
             session.execute_write(
-                _create_audiobook_and_relations_tx, metadata=metadata, path=path
-            )  # type: ignore
+                _create_audiobook_and_relations_tx,  # type: ignore
+                metadata=metadata,
+                path=path,
+            )
         logger.info(
             "Successfully stored audiobook '{desc}...' by {author}",
             desc=metadata.description[:30],
-            author=metadata.author,
+            author=metadata.authors,
         )
     except neo4j.exceptions.ServiceUnavailable as e:
         logger.error(f"Neo4j connection error: {e}")
@@ -135,7 +151,7 @@ def store_audiobook_in_neo4j(
         raise
     except Exception as e:
         logger.exception(
-            f"Failed to store audiobook metadata for author {metadata.author}: {e}"
+            f"Failed to store audiobook metadata for author {metadata.authors}: {e}"
         )
         # Handle other potential errors during the transaction
         raise  # Re-raise the exception if calling code needs to know
