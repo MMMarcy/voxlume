@@ -1,9 +1,11 @@
 """Entrypoint."""
 
+import time
 from collections.abc import Callable
 from queue import LifoQueue
 from typing import TypeVar, cast
 
+import neo4j
 import requests
 from absl import app, flags
 from bs4 import BeautifulSoup
@@ -15,6 +17,7 @@ from loguru import logger
 from neo4j import Driver, GraphDatabase
 from pydantic import BaseModel
 from rich.pretty import pprint
+from random_user_agent.user_agent import UserAgent
 
 from python_cli.entities import (
     AudioBookMetadata,
@@ -28,7 +31,7 @@ T = TypeVar("T", bound=BaseModel)
 _BASE_URL = flags.DEFINE_string(
     name="base_url",
     help="The baseurl of audiobookbay.",
-    default="https://audiobookbay.lu",
+    default="http://audiobookbay.is/",
 )
 
 _DB_USERNAME = flags.DEFINE_string(
@@ -63,6 +66,8 @@ messages = [
     ("system", """You are a person in charge of extracting informations from HTML.""")
 ]
 
+user_agent_rotator = UserAgent(limit=100)
+
 
 def get_driver() -> Driver:
     """Returns a neo4j driver.
@@ -82,10 +87,9 @@ def get_driver() -> Driver:
 
 def get_user_agent() -> str:
     """Returns the user agent."""
-    return (
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
-    )
+    user_agent = user_agent_rotator.get_random_user_agent()
+    logger.info("Using user agent {}", user_agent)
+    return user_agent
 
 
 def get_base_llm(
@@ -126,10 +130,143 @@ def retrieve_and_parse_page(
     http_response = requests.get(  # noqa: S113
         url, allow_redirects=True, headers={"User-Agent": get_user_agent()}
     )
+
+    logger.info("Gotten page {}, with status_code {}", url, http_response.status_code)
     body = filtering_fn(http_response.text)
     llm_response = cast("dict", llm.invoke([*messages, ("human", body)]))
     parsed_response = llm_response["parsed"]
-    return cast("T", parsed_response)
+    if parsed_response:
+        return cast("T", parsed_response)
+    return None
+
+
+def _create_audiobook_and_relations_tx(
+    tx: neo4j.Transaction, metadata: AudioBookMetadata
+) -> None:
+    """Insert the audiobook metadata.
+
+    Neo4j transaction function to create audiobook, author, relationships,
+    and optionally series information.
+    Designed to be used with session.execute_write().
+    """
+    log = logger
+
+    # Prepare properties for the Audiobook node, excluding relational info
+    # Use model_dump for Pydantic v2+ or .dict() for v1
+    try:
+        audiobook_props = metadata.model_dump(
+            exclude={"author", "is_part_of_series", "series", "series_volume"}
+        )
+    except AttributeError:  # Fallback for Pydantic v1
+        audiobook_props = metadata.dict(
+            exclude={"author", "is_part_of_series", "series", "series_volume"}
+        )
+
+    # Add series_volume to props only if it's relevant (part of a series)
+    # This ensures it's set on the Audiobook node itself
+    if metadata.is_part_of_series and metadata.series and metadata.series_volume:
+        audiobook_props["series_volume"] = metadata.series_volume
+    else:
+        # Ensure it's explicitly null if not part of series or volume is None
+        audiobook_props["series_volume"] = None
+
+    log.debug(
+        "Audiobook properties for Cypher: {audiobook_props}",
+        audiobook_props=audiobook_props,
+    )
+
+    # 1. MERGE Author node (creates if not exists, matches if exists)
+    # 2. CREATE Audiobook node (always create a new one)
+    # 3. Set Audiobook properties
+    # 4. MERGE relationships between Author and Audiobook
+    query_main = """
+    MERGE (author:Author {name: $author_name})
+    CREATE (ab:Audiobook)
+    SET ab = $audiobook_props
+    MERGE (author)-[:HAS_AUTHORED]->(ab)
+    MERGE (ab)-[:WRITTEN_BY]->(author)
+    RETURN id(ab) AS audiobook_id, id(author) AS author_id
+    """
+    result = tx.run(
+        query_main, author_name=metadata.author, audiobook_props=audiobook_props
+    )
+
+    # Get the internal Neo4j ID of the created audiobook for linking the series
+    record = result.single()
+    if not record:
+        raise RuntimeError("Failed to create Audiobook node or retrieve its ID.")  # noqa: TRY003
+    audiobook_id = record["audiobook_id"]
+    author_id = record["author_id"]  # Keep author_id in case needed elsewhere
+    log.info(
+        "Created/Merged Author ID: {author_id}, Created Audiobook ID: {audiobook_id}",
+        author_id=author_id,
+        audiobook_id=audiobook_id,
+    )
+
+    # 5. Check if series information is present
+    if metadata.is_part_of_series and metadata.series:
+        log.info("Handling series: {series}", series=metadata.series)
+        # 6. MERGE Series node (unique by title *for this author*)
+        # 7. MERGE relationships between Author and Series
+        # 8. MERGE relationships between Series and the newly created Audiobook
+        # We MATCH the author and audiobook using their known identifiers/properties
+        # to ensure we link the correct nodes. Using the internal ID is safest.
+        query_series = """
+        MATCH (author:Author) WHERE id(author) = $author_id
+        MATCH (ab:Audiobook) WHERE id(ab) = $audiobook_id
+
+        // Merge the series node - only based on title for simplicity,
+        // but linking it to the author ensures context if needed later.
+        MERGE (series:Series {title: $series_title})
+
+        // Merge relationships Author <-> Series
+        MERGE (author)-[:AUTHORED_SERIES]->(series)
+        MERGE (series)-[:WRITTEN_BY_SERIES]->(author)
+
+        // Merge relationships Series <-> Audiobook
+        MERGE (series)-[:COMPOSED_BY]->(ab)
+        MERGE (ab)-[:PART_OF_SERIES]->(series)
+
+        // Note: series_volume was already set on the Audiobook node in the first query
+        """
+        tx.run(
+            query_series,
+            author_id=author_id,
+            audiobook_id=audiobook_id,
+            series_title=metadata.series,
+        )
+        log.info(
+            "Linked Audiobook ID {audiobook_id} to Series '{series}'",
+            audiobook_id=audiobook_id,
+            series=metadata.series,
+        )
+
+
+def store_audiobook_in_neo4j(driver: neo4j.Driver, metadata: AudioBookMetadata) -> None:
+    """Stores audiobook metadata in Neo4j using a managed transaction.
+
+    Args:
+        driver: An initialized neo4j.Driver instance.
+        metadata: An AudioBookMetadata object containing the data.
+    """
+    try:
+        with driver.session() as session:
+            session.execute_write(_create_audiobook_and_relations_tx, metadata=metadata)  # type: ignore
+        logger.info(
+            "Successfully stored audiobook '{desc}...' by {author}",
+            desc=metadata.description[:30],
+            author=metadata.author,
+        )
+    except neo4j.exceptions.ServiceUnavailable as e:
+        logger.error(f"Neo4j connection error: {e}")
+        # Handle connection issues (e.g., retry, raise specific exception)
+        raise
+    except Exception as e:
+        logger.exception(
+            f"Failed to store audiobook metadata for author {metadata.author}: {e}"
+        )
+        # Handle other potential errors during the transaction
+        raise  # Re-raise the exception if calling code needs to know
 
 
 def main(argv: list[str]) -> None:
@@ -187,7 +324,10 @@ def main(argv: list[str]) -> None:
                     filtering_fn=extract_only_post_info,
                 )
                 if audiobook_metadata:
-                    pprint(audiobook_metadata.model_dump())
+                    store_audiobook_in_neo4j(driver=neo4j, metadata=audiobook_metadata)
+                else:
+                    logger.warning("Parsing of audiobook data failed.")
+        time.sleep(30)
 
     while not queue.empty():
         pprint(queue.get())

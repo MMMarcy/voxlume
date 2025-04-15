@@ -33,8 +33,11 @@ class NewSubmissionList(BaseModel):
 class AudioBookMetadata(BaseModel):
     """The metadata about the audiobook."""
 
+    title: str = Field(
+        description="The title of the book."
+    )
     categories: list[str] = Field(
-        description="The categories this book has been categorized into"
+        description="The categories this book has been categorized into."
     )
 
     language: str = Field(description="The language of the audiobook.")
@@ -70,6 +73,22 @@ class AudioBookMetadata(BaseModel):
 
     runtime: str | None = Field(
         description="The runtime lenght of the audiobook if present.", default=None
+    )
+
+    is_part_of_series: bool | None = Field(
+        description="Whether or not you think this book is part of a series.",
+        default=False,
+    )
+
+    series: str | None = Field(
+        description="The title of the series.",
+        default=None
+    )
+
+    series_volume: str | None = Field(
+        description=dedent("The sequential number of the volume in the series. "
+                           "Only populated if the series is present"),
+        default=None
     )
 
 
