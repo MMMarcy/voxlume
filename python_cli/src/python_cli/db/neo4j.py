@@ -62,19 +62,24 @@ def _create_audiobook_and_relations_tx(
     query_create_audiobook = """
     CREATE (ab:Audiobook)
     SET ab = $audiobook_props
-    MERGE (reader:Reader {name: $reader_name})
-    MERGE (ab)-[:READ_BY]->(reader)
     RETURN elementId(ab) AS audiobook_id
     """
     result = tx.run(
         query_create_audiobook,
         audiobook_props=audiobook_props,
-        reader_name=metadata.read_by,
     )
     record = result.single()
     if not record:
         raise RuntimeError()
     audiobook_id = record["audiobook_id"]
+
+    query_attach_reader = """
+    MATCH (ab:Audiobook) WHERE elementId(ab) = $audiobook_id
+    MERGE (reader:Reader {name: $reader_name})
+    MERGE (ab)-[:READ_BY]->(reader)
+    """
+    for reader in metadata.read_by:
+        tx.run(query_attach_reader, audiobook_id=audiobook_id, reader_name=reader)
 
     author_ids = [
         _save_author_and_get_id(tx, name, audiobook_id) for name in metadata.authors

@@ -46,8 +46,8 @@ class AudioBookMetadata(BaseModel):
 
     authors: list[str] = Field(description="The names of authors of this audiobook.")
 
-    read_by: str = Field(
-        description="The name of the voice actor that read this audiobook."
+    read_by: list[str] = Field(
+        description="The names of the voice actors that read this audiobook."
     )
 
     format: str = Field(
