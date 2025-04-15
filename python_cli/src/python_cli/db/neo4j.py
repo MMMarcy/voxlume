@@ -42,7 +42,13 @@ def _create_audiobook_and_relations_tx(
     Designed to be used with session.execute_write().
     """
     audiobook_props = metadata.model_dump(
-        exclude={"authors", "is_part_of_series", "series", "series_volume", "read_by"}
+        exclude={
+            "authors",
+            "is_part_of_series",
+            "series",
+            "series_volume",
+            "read_by",
+        }
     )
     # Adds the path to the properties of the audiobook
     audiobook_props[_PATH_PROPERTY_NAME] = path
@@ -60,13 +66,15 @@ def _create_audiobook_and_relations_tx(
         audiobook_props=audiobook_props,
     )
     query_create_audiobook = """
-    CREATE (ab:Audiobook)
-    SET ab = $audiobook_props
+    MERGE (ab:Audiobook {path: $path})
+    ON CREATE SET ab = $audiobook_props, ab.last_upload = timestamp()
+    ON MATCH SET ab.last_upload = timestamp()
     RETURN elementId(ab) AS audiobook_id
     """
     result = tx.run(
         query_create_audiobook,
         audiobook_props=audiobook_props,
+        path=path,
     )
     record = result.single()
     if not record:
@@ -80,6 +88,22 @@ def _create_audiobook_and_relations_tx(
     """
     for reader in metadata.read_by:
         tx.run(query_attach_reader, audiobook_id=audiobook_id, reader_name=reader)
+
+    query_attach_category = """
+    MATCH (ab:Audiobook) WHERE elementId(ab) = $audiobook_id
+    MERGE (category:Category {value: $category_name})
+    MERGE (ab)-[:CATEGORIZED_AS]->(category)
+    """
+    for cat in metadata.categories:
+        tx.run(query_attach_category, audiobook_id=audiobook_id, category_name=cat)
+
+    query_attach_keyword = """
+    MATCH (ab:Audiobook) WHERE elementId(ab) = $audiobook_id
+    MERGE (kw:Keyword {value: $keyword})
+    MERGE (ab)-[:HAS_KEYWORD]->(kw)
+    """
+    for kw in metadata.keywords:
+        tx.run(query_attach_keyword, audiobook_id=audiobook_id, keyword=kw)
 
     author_ids = [
         _save_author_and_get_id(tx, name, audiobook_id) for name in metadata.authors
