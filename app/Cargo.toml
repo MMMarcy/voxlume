@@ -10,6 +10,8 @@ leptos.workspace = true
 leptos_meta.workspace = true
 leptos_router.workspace = true
 leptos_axum = { workspace = true, optional = true }
+entities_lib = { path = "../model/entities_lib", optional = true }
+neo4rs = { workspace = true, optional = true }
 web-sys = { workspace = true, optional = true, features = [
   "Document",
   "Element",
@@ -21,6 +23,7 @@ shared = { path = "../shared", default-features = false, optional = true }
 http.workspace = true
 cfg-if.workspace = true
 thiserror.workspace = true
+tokio = { workspace = true, optional = true }
 
 [features]
 default = []
@@ -31,5 +34,8 @@ ssr = [
   "leptos_router/ssr",
   "dep:leptos_axum",
   "dep:shared",
+  "dep:entities_lib",
+  "dep:neo4rs",
+  "dep:tokio",
   "dep:web-sys",
 ]

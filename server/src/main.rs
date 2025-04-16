@@ -1,71 +1,40 @@
-// pub mod fileserv;
-
 // use axum::http::header::HeaderMap;
+use app::{shell, App};
 use axum::{
     body::Body as AxumBody, extract::State, http::Request, response::IntoResponse, routing::get,
     Router,
 };
+use clap::Parser;
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
-
-// use crate::fileserv::file_and_error_handler;
-use app::{shell, App};
-// use server_utils::entities_impl::user_impl::SqlUser;
-// use server_utils::entities_impl::user_impl::UserAuthSession;
-// use shared::state::AppState;
-
-use leptos::logging;
+use log::info;
+use neo4rs::ConfigBuilder;
+use neo4rs::Graph;
 use shared::state::AppState;
-// #[derive(Debug, Parser)]
-// #[command(version, about, long_about = None)]
-// struct Args {
-//     /// Username for postgres.
-//     #[arg(long)]
-//     postgres_username: String,
-//
-//     /// Username for postgres.
-//     #[arg(long)]
-//     postgres_password: String,
-//
-//     /// URL for postgres.
-//     #[arg(long)]
-//     postgres_url: String,
-//
-//     /// Postgres database to use.
-//     #[arg(long)]
-//     postgres_db: String,
-//
-//     /// Postgres max concurrent connections.
-//     #[arg(long, default_value_t = 5)]
-//     postgres_max_connections: u32,
-// }
 
-// async fn server_fn_handler(
-//     State(app_state): State<AppState>,
-//     // auth_session: UserAuthSession,
-//     _path: Path<String>,
-//     _headers: HeaderMap,
-//     _raw_query: RawQuery,
-//     request: Request<AxumBody>,
-// ) -> impl IntoResponse {
-//     handle_server_fns_with_context(
-//         move || {
-//             // provide_context(auth_session.clone());
-//             provide_context(app_state.clone());
-//         },
-//         request,
-//     )
-//     .await
-//
+#[derive(Debug, Parser)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Username for postgres.
+    #[arg(long)]
+    neo4j_username: String,
+
+    /// Username for postgres.
+    #[arg(long)]
+    neo4j_password: String,
+
+    /// URL for postgres.
+    #[arg(long)]
+    neo4j_url: String,
+}
+
 async fn server_fn_handler(
-    State(app_state): State<AppState>,
+    State(_app_state): State<AppState>,
     request: Request<AxumBody>,
 ) -> impl IntoResponse {
-    dbg!(&request);
-
     handle_server_fns_with_context(
         move || {
-            provide_context(app_state.state_str.clone());
+            // provide_context(app_state.state_str.clone());
         },
         request,
     )
@@ -74,25 +43,26 @@ async fn server_fn_handler(
 
 #[tokio::main]
 async fn main() {
-    // let args = Args::parse();
-    // let config: OllamaServerConfig = read_confuguration("config.json").unwrap();
+    let args = Args::parse();
 
     let conf = get_configuration(None).unwrap();
     let leptos_options = conf.leptos_options;
     let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
-    // info!("Connecting to PSQL...");
 
-    // let db = get_postgres_pool(&args).await;
-    // let session_config = SessionConfig::default().with_table_name("sessions_table");
-    // let session_store = SessionStore::<SessionPgPool>::new(Some(db.clone().into()), session_config)
-    //   .await
-    //     .unwrap();
-    // let auth_config = AuthConfig::<i64>::default();
-
+    info!("Connecting to NEO4J");
+    let config = ConfigBuilder::default()
+        .uri(args.neo4j_url)
+        .user(args.neo4j_username)
+        .password(args.neo4j_password)
+        .max_connections(16)
+        .fetch_size(200)
+        .build()
+        .unwrap();
+    let graph = Graph::connect(config).await.unwrap();
     let app_state = AppState {
         leptos_options,
-        state_str: String::from("Test"),
+        graph,
     };
     // build our application with a route
     let binary = Router::new()
@@ -110,7 +80,7 @@ async fn main() {
         .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    logging::log!("listening on http://{}", &addr);
+    info!("listening on http://{}", &addr);
     axum::serve(listener, binary.into_make_service())
         .await
         .unwrap();

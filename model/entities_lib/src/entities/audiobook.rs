@@ -2,7 +2,7 @@
 #![allow(clippy::used_underscore_items)]
 
 //! Module defining a book.
-use chrono::NaiveDateTime;
+// use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -11,13 +11,13 @@ pub struct AudioBook {
 
     pub categories: Vec<String>,
 
-    pub cover_url: String,
+    pub cover_url: Option<String>,
 
     pub description: String,
 
-    pub file_size: String,
+    pub file_size: Option<String>,
 
-    pub format: String,
+    pub format: Option<String>,
 
     pub keywords: Vec<String>,
 
@@ -27,7 +27,7 @@ pub struct AudioBook {
     pub path: String,
 
     /// The timestamp when the change list item was created.
-    pub last_upload: NaiveDateTime,
+    pub last_upload: u64,
 
     /// Title
     pub title: String,

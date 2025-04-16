@@ -18,12 +18,13 @@ axum = { workspace = true, features = ["macros"] }
 axum_session = { workspace = true }
 axum_session_auth = { workspace = true }
 axum_session_sqlx = { workspace = true }
-sha3 = { workspace = true }
-tracing = { workspace = true }
-rand = { workspace = true }
-indoc = { workspace = true }
-reqwest = { workspace = true, features = ["json", "stream"] }
-futures-util = { workspace = true }
 base64 = { workspace = true }
+futures-util = { workspace = true }
+indoc = { workspace = true }
 markdown = { workspace = true }
+neo4rs = { workspace = true }
+rand = { workspace = true }
+reqwest = { workspace = true, features = ["json", "stream"] }
+sha3 = { workspace = true }
 strfmt = { workspace = true }
+tracing = { workspace = true }

@@ -48,10 +48,38 @@ pub fn App() -> impl IntoView {
 
 #[server]
 async fn test_server_fn() -> Result<(), ServerFnError> {
+    use entities_lib::entities::audiobook::AudioBook;
     use leptos::logging::{log, warn};
+    use neo4rs::{query, Graph};
     use shared::state::AppState;
-    if let Some(str) = use_context::<AppState>() {
-        log!("test_server_fn state: {}", str.state_str);
+    use tokio;
+
+    if let Some(app_state) = use_context::<AppState>() {
+        let graph: Graph = app_state.graph;
+
+        let res = tokio::spawn(async move {
+            let mut acc: Vec<AudioBook> = vec![];
+            let mut stream = graph
+                .execute(query(
+                    r#"
+            MATCH (p:Audiobook)
+            RETURN p
+            "#,
+                ))
+                .await
+                .unwrap();
+            while let Some(row) = stream.next().await.unwrap() {
+                match row.get("p") {
+                    Ok(value) => acc.push(value),
+                    Err(e) => log!("{}", e),
+                }
+            }
+            acc
+        })
+        .await
+        .unwrap();
+
+        log!("Query result: {:?}", res.len());
     } else {
         warn!("No state");
     }

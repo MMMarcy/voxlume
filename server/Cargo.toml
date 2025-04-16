@@ -15,20 +15,25 @@ leptos_meta = { workspace = true }
 leptos_router = { workspace = true }
 leptos_axum = { workspace = true }
 
+anyhow = { workspace = true }
 axum = { workspace = true, features = ["macros"] }
 axum_session = { workspace = true }
 axum_session_auth = { workspace = true }
 axum_session_sqlx = { workspace = true }
 base64 = { workspace = true }
-clap = { workspace = true, features = ["derive"] }
+bytes = { workspace = true }
 cfg-if = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
 console_error_panic_hook = { workspace = true }
 futures-util = { workspace = true }
+hex-literal = { workspace = true }
 http = { workspace = true }
 indoc = { workspace = true }
 leptos-use = { workspace = true }
 log = { workspace = true }
 markdown = { workspace = true, optional = false }
+neo4rs = { workspace = true }
+prost = { workspace = true }
 rand = { workspace = true }
 reqwest = { workspace = true, features = ["json", "stream"] }
 serde = { workspace = true, features = ["derive"] }
@@ -41,8 +46,4 @@ tower = { workspace = true }
 tower-http = { workspace = true }
 tracing = { workspace = true }
 wasm-bindgen = { workspace = true }
-anyhow = { workspace = true }
-hex-literal = { workspace = true }
 web-sys = { workspace = true }
-prost = { workspace = true }
-bytes = { workspace = true }

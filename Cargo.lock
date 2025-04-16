@@ -176,13 +176,16 @@ name = "app"
 version = "0.1.0"
 dependencies = [
  "cfg-if",
+ "entities_lib",
  "http",
  "leptos",
  "leptos_axum",
  "leptos_meta",
  "leptos_router",
+ "neo4rs",
  "shared",
  "thiserror 2.0.12",
+ "tokio",
  "web-sys",
 ]
 
@@ -3533,6 +3536,7 @@ dependencies = [
  "leptos_router",
  "log",
  "markdown",
+ "neo4rs",
  "prost",
  "rand 0.9.0",
  "reqwest",
@@ -3689,6 +3693,7 @@ dependencies = [
  "leptos_axum",
  "leptos_router",
  "markdown",
+ "neo4rs",
  "rand 0.9.0",
  "reqwest",
  "serde",
