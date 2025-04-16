@@ -183,6 +183,7 @@ dependencies = [
  "leptos_router",
  "shared",
  "thiserror 2.0.12",
+ "web-sys",
 ]
 
 [[package]]
