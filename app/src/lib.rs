@@ -57,7 +57,7 @@ async fn test_server_fn() -> Result<(), ServerFnError> {
     Ok(())
 }
 
-/// Renders the home page of your application.
+/// Renders the homepage of your application.
 #[component]
 fn HomePage() -> impl IntoView {
     // Creates a reactive value to update the button

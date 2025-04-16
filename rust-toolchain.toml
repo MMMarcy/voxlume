@@ -1,0 +1,11 @@
+[toolchain]
+channel = "nightly-2025-04-10"
+components = [
+  "rustfmt",
+  "rust-analyzer",
+  "cargo",
+  "clippy",
+  "rust-std",      # Test
+]
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+profile = "default"

@@ -34,12 +34,6 @@ reqwest = { workspace = true, features = ["json", "stream"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha3 = { workspace = true }
-sqlx = { workspace = true, features = [
-  "runtime-tokio",
-  "tls-native-tls",
-  "postgres",
-  "json",
-] }
 strfmt = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }

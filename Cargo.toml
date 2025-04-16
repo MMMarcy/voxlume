@@ -1,13 +1,7 @@
 # cargo-features = ["codegen-backend"]
 [workspace]
 resolver = "2"
-members = [
-    # "app", 
-    # "frontend", 
-    "model/entities_lib",
-    # "server", 
-    # "shared",
-]
+members = ["app", "frontend", "model/entities_lib", "server", "shared"]
 
 # need to be applied only to wasm build
 [profile.release]
@@ -17,6 +11,7 @@ opt-level = 'z'
 
 [workspace.dependencies]
 leptos = { version = "0.7", features = ["nightly"] }
+leptos_macro = { version = "0.7" }
 leptos_meta = { version = "0.7" }
 leptos_router = { version = "0.7", features = ["nightly"] }
 leptos_axum = { version = "0.7" }
