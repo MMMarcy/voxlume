@@ -14,7 +14,7 @@ resource "docker_container" "neo4j_container" {
     source = "${abspath(path.root)}/../docker_volumes/neo4j"
     type   = "bind"
   }
-  restart      = "unless-stopped"
+  restart      = "always"
   network_mode = "host"
   ports {
     internal = local.neo4j_ports[0]

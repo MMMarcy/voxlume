@@ -14,7 +14,7 @@ resource "docker_container" "postgres_container" {
     source = "${abspath(path.root)}/../docker_volumes/postgres"
     type   = "bind"
   }
-  restart      = "unless-stopped"
+  restart      = "always"
   network_mode = "host"
   ports {
     internal = local.postgres_port
