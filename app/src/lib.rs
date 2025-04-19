@@ -92,6 +92,7 @@ async fn test_server_fn() -> Result<(), ServerFnError> {
 /// Renders the homepage of your application.
 #[component]
 fn HomePage() -> impl IntoView {
+    use crate::ui_components::navbar::Navbar;
     use crate::ui_components::theme_toggler::ThemeSwitcher;
     let count = RwSignal::new(0);
     let on_click = move |_| *count.write() += 1;
@@ -101,6 +102,7 @@ fn HomePage() -> impl IntoView {
         });
     };
     view! {
+        <Navbar />
         <h1>"Welcome to Leptos!"</h1>
         <button on:click=on_click>"Click Me: " {count}</button>
         <br/>
