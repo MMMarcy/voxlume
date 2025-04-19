@@ -1,6 +1,6 @@
 //! Component that toggles between dark and light theme.
 
-use leptos::logging::{error, log};
+use leptos::logging::error;
 use leptos::prelude::*;
 use web_sys;
 
@@ -28,6 +28,19 @@ impl Theme {
     }
 }
 
+// Helper function to get localStorage (only runs in the browser)
+fn local_storage() -> Option<web_sys::Storage> {
+    // TODO: Maybe we don't need these cfg statements or maybe it is possible to use cfg_if.
+    #[cfg(feature = "hydrate")]
+    {
+        window().local_storage().unwrap()
+    }
+    #[cfg(feature = "ssr")]
+    {
+        None // Return None on the server
+    }
+}
+
 #[component]
 fn MoonButton() -> impl IntoView {
     view! {
@@ -46,51 +59,36 @@ fn SunButton() -> impl IntoView {
     }
 }
 
-// Helper function to get localStorage (only runs in the browser)
-fn local_storage() -> Option<web_sys::Storage> {
-    #[cfg(feature = "hydrate")]
-    {
-        window().local_storage().unwrap()
-    }
-    #[cfg(feature = "ssr")]
-    {
-        None // Return None on the server
-    }
-}
-
 #[component]
 pub fn ThemeSwitcher() -> impl IntoView {
     // Creates a reactive value to update the button
-    // 1. Create a signal to hold the theme state
-    let initial_theme = {
-        #[cfg(feature = "hydrate")] // Only run on the client
+    // TODO: Maybe we don't need these cfg statements. Or it might be possible to use cfg_if.
+    let initial_theme: Theme = {
+        #[cfg(feature = "hydrate")]
         {
             let stored_theme =
                 local_storage().and_then(|storage| storage.get_item("theme").ok().flatten());
             Theme::from_string(stored_theme)
         }
-        #[cfg(feature = "ssr")] // Default on the server
+        #[cfg(feature = "ssr")]
         {
             Theme::Light
         }
     };
     let (theme, set_theme) = signal(initial_theme);
 
-    // 3. Create an effect to update the <html> tag's attribute
     Effect::new(move |_| {
         // Get the current theme value from the signal
         let current_theme = theme.get();
-        log!("{:?}", current_theme);
 
         // Access the document (client-side only)
         let h: web_sys::Element = document().document_element().expect("boh");
         match h.set_attribute("data-theme", &current_theme.to_string()) {
-            Ok(_) => log!("Cool!"),
+            Ok(_) => (),
             Err(err) => error!("Not cool -> {:?}", err),
         }
     });
 
-    // 2. Button to toggle the theme
     let toggle_theme = move |_| {
         set_theme.update(|current| {
             *current = match current {

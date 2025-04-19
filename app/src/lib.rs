@@ -1,5 +1,4 @@
-use leptos::logging::error;
-use leptos::{logging::log, prelude::*, task::spawn_local};
+use leptos::{prelude::*, task::spawn_local};
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},

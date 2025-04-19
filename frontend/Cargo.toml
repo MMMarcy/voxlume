@@ -21,4 +21,5 @@ wasm-bindgen.workspace = true
 
 [features]
 default = []
-hydrate = ["app/hydrate", "leptos/hydrate"]
+hydrate = ["app", "leptos/hydrate"]
+ssr = []
