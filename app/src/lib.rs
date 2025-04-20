@@ -12,16 +12,19 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
-                <meta charset="utf-8"/>
-                <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                <script src="https://kit.fontawesome.com/9af46bbad0.js" crossorigin="anonymous"></script>
-                <AutoReload options=options.clone()/>
-                <HydrationScripts options/>
-                <MetaTags/>
-                <Stylesheet id="leptos" href="/pkg/voxlume.css"/>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <script
+                    src="https://kit.fontawesome.com/9af46bbad0.js"
+                    crossorigin="anonymous"
+                ></script>
+                <AutoReload options=options.clone() />
+                <HydrationScripts options />
+                <MetaTags />
+                <Stylesheet id="leptos" href="/pkg/voxlume.css" />
             </head>
             <body>
-                <App/>
+                <App />
             </body>
         </html>
     }
@@ -33,16 +36,14 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     view! {
-
-
         // sets the document title
-        <Title text="Welcome to Leptos"/>
+        <Title text="Welcome to Leptos" />
 
         // content for this welcome page
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage/>
+                    <Route path=StaticSegment("") view=HomePage />
                 </Routes>
             </main>
         </Router>
@@ -93,7 +94,6 @@ async fn test_server_fn() -> Result<(), ServerFnError> {
 #[component]
 fn HomePage() -> impl IntoView {
     use crate::ui_components::navbar::Navbar;
-    use crate::ui_components::theme_toggler::ThemeSwitcher;
     let count = RwSignal::new(0);
     let on_click = move |_| *count.write() += 1;
     let server_fn = move |_| {
@@ -105,13 +105,10 @@ fn HomePage() -> impl IntoView {
         <Navbar />
         <h1>"Welcome to Leptos!"</h1>
         <button on:click=on_click>"Click Me: " {count}</button>
-        <br/>
-        <button
-            class="has-text-primary"
-            on:click=server_fn>"Call server fn"</button>
-        <br/>
-        <div class="container">
-            <ThemeSwitcher/>
-        </div>
+        <br />
+        <button class="has-text-primary" on:click=server_fn>
+            "Call server fn"
+        </button>
+        <br />
     }
 }

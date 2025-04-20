@@ -19,7 +19,6 @@ impl Theme {
         }
     }
 
-    #[cfg(feature = "hydrate")]
     fn from_string(s: Option<String>) -> Theme {
         match s.as_deref() {
             Some("dark") => Theme::Dark,
@@ -64,16 +63,9 @@ pub fn ThemeSwitcher() -> impl IntoView {
     // Creates a reactive value to update the button
     // TODO: Maybe we don't need these cfg statements. Or it might be possible to use cfg_if.
     let initial_theme: Theme = {
-        #[cfg(feature = "hydrate")]
-        {
-            let stored_theme =
-                local_storage().and_then(|storage| storage.get_item("theme").ok().flatten());
-            Theme::from_string(stored_theme)
-        }
-        #[cfg(feature = "ssr")]
-        {
-            Theme::Light
-        }
+        let stored_theme =
+            local_storage().and_then(|storage| storage.get_item("theme").ok().flatten());
+        Theme::from_string(stored_theme)
     };
     let (theme, set_theme) = signal(initial_theme);
 
@@ -103,11 +95,8 @@ pub fn ThemeSwitcher() -> impl IntoView {
 
     view! {
         <div on:click=toggle_theme>
-            <Show
-                when=move || {theme.get() == Theme::Light}
-                fallback=|| view! {<SunButton/>}
-            >
-                <MoonButton/>
+            <Show when=move || { theme.get() == Theme::Light } fallback=|| view! { <SunButton /> }>
+                <MoonButton />
             </Show>
         </div>
     }
