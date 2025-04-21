@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 // use axum::http::header::HeaderMap;
 use app::{shell, App};
 use axum::{

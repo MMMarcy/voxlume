@@ -1,6 +1,6 @@
 //! Navbar component and utilities to toggle the `is_active` class.
 
-use crate::ui_components::theme_toggler::ThemeSwitcher;
+use crate::ui_components::{searchbar::SearchBar, theme_toggler::ThemeSwitcher};
 use leptos::prelude::*;
 use leptos_router::components::A;
 
@@ -47,24 +47,11 @@ pub fn Navbar() -> impl IntoView {
                             <a class="navbar-item">By search terms</a>
                         </div>
                     </div>
-                    <div class="navbar-item">
-                    </div>
+                    <div class="navbar-item"></div>
                 </div>
 
                 <div class="navbar-item">
-                    <div class="field has-addons">
-                        <div class="control has-icons-left">
-                            <input class="input is-medium" type="email" placeholder="Search here" />
-                            <span class="icon is-left">
-                                <i class="fas fa-magnifying-glass"></i>
-                            </span>
-                        </div>
-                        <div class="control">
-                            <button class="button is-warning is-medium">
-                                Syntax
-                            </button>
-                        </div>
-                    </div>
+                    <SearchBar />
                 </div>
                 <div class="navbar-end">
 
