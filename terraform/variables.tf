@@ -17,8 +17,8 @@ variable "postgres_docker_image_data" {
   })
   description = "Object with the information about the pgmq docker image."
   default = {
-    image_name = "postgres"
-    tag        = "17"
+    image_name = "paradedb/paradedb"
+    tag        = "latest"
   }
 }
 

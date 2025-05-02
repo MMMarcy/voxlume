@@ -17,11 +17,12 @@ leptos_router = { version = "0.7", features = ["nightly"] }
 leptos_axum = { version = "0.7" }
 
 anyhow = { version = "1.0.91" }
+async-trait = { version = "*" }
+argon2 = { version = "*" }
 axum = { version = "=0.7.9", features = ["macros"] }
-axum_session = { version = "0.16.0" }
-axum_session_auth = { version = "0.16.0" }
-axum_session_sqlx = { version = "0.5.0" }
-base64 = "0.22.1"
+axum_session = { version = "0.14.4" }
+axum_session_auth = { version = "0.14.1" }
+axum_session_sqlx = { version = "0.3.0" }
 bytes = { version = "1.8.0" }
 cfg-if = { version = "*" }
 chrono = { version = "0.4.39" }
@@ -39,6 +40,8 @@ leptos-use = { version = "*" }
 log = "0.4"
 markdown = { version = "1.0.0-alpha.21" }
 neo4rs = { version = "*" }
+password-hash = { version = "*" }
+pretty_env_logger = { version = "*" }
 prost = { version = "0.13.3" }
 prost-build = { version = "0.13.3" }
 rand = "0.9"
@@ -47,6 +50,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "*" }
 sha3 = { version = "*" }
 shaku = { version = "*", features = ["derive"] }
+sqlx = { version = "0.8", features = [
+  "runtime-tokio",
+  "tls-native-tls",
+  "derive",
+  "macros",
+] }
 strum = { version = "*" }
 strum_macros = { version = "*" }
 strfmt = { version = "0.2.4" }
@@ -94,7 +103,7 @@ style-file = "style/main.scss"
 assets-dir = "public"
 
 # The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
-site-addr = "127.0.0.1:3000"
+site-addr = "0.0.0.0:3000"
 
 # The port to use for automatic reload monitoring
 reload-port = 3001

@@ -14,9 +14,9 @@ prost.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 shaku.workspace = true
+sqlx = { workspace = true, optional = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
-uuid = { workspace = true, features = ["serde"] }
 thiserror = { workspace = true }
 
 [dev-dependencies]
@@ -26,4 +26,5 @@ tokio = { workspace = true, features = ["macros", "test-util"] }
 
 [features]
 default = []
-ssr = ["dep:neo4rs"]
+ssr = ["dep:neo4rs", "dep:sqlx"]
+hydrate = []

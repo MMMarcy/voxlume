@@ -1,11 +1,18 @@
-use leptos::{prelude::*, task::spawn_local};
+use entities_lib::entities::user::User;
+use leptos::logging::debug_warn;
+use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
     StaticSegment,
 };
+use pages::logout::LogoutPage;
 
+pub mod pages;
 pub mod ui_components;
+
+use crate::pages::login::LoginPage;
+use crate::pages::register::RegisterPage;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -30,10 +37,45 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
+#[server(GetCurrentUser, "/api")]
+pub async fn get_current_user() -> Result<Option<User>, ServerFnError> {
+    use log::{debug, error, info};
+    use shared::auth_user::AuthSession;
+
+    if let Some(auth) = use_context::<AuthSession>() {
+        info!("Authsession available");
+        return Ok(auth.current_user.clone().map(|v| v.into_user()));
+    } else {
+        error!("Authsession not available");
+        return Err(ServerFnError::new("No auth context found."));
+    }
+}
+
 #[component]
 pub fn App() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
+
+    use crate::ui_components::navbar::Navbar;
+
+    let default_user: User = Default::default();
+    let (get_user_signal, set_user_signal) = signal(default_user);
+    provide_context(get_user_signal);
+    provide_context(set_user_signal);
+    let get_current_user_op = OnceResource::new(get_current_user());
+    Effect::new(move || match get_current_user_op.get() {
+        Some(Ok(Some(user))) => {
+            debug_warn!("Got user {:?} from session", user);
+            set_user_signal(user);
+        }
+        Some(Ok(None)) => {
+            debug_warn!("No user found for this session");
+        }
+        Some(Err(_)) => debug_warn!("Problems with user authentication"),
+        None => {
+            debug_warn!("Got None from get_current_user_op");
+        }
+    });
 
     view! {
         // sets the document title
@@ -42,73 +84,24 @@ pub fn App() -> impl IntoView {
         // content for this welcome page
         <Router>
             <main>
+                <Navbar />
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=HomePage />
+                    <Route path=StaticSegment("/register") view=RegisterPage />
+                    <Route path=StaticSegment("/login") view=LoginPage />
+                    <Route path=StaticSegment("/logout") view=LogoutPage />
                 </Routes>
             </main>
         </Router>
     }
 }
 
-#[server]
-async fn test_server_fn() -> Result<(), ServerFnError> {
-    use entities_lib::entities::audiobook::AudioBook;
-    use leptos::logging::{log, warn};
-    use neo4rs::{query, Graph};
-    use shared::state::AppState;
-    use tokio;
-
-    if let Some(app_state) = use_context::<AppState>() {
-        let graph: Graph = app_state.graph;
-
-        let res = tokio::spawn(async move {
-            let mut acc: Vec<AudioBook> = vec![];
-            let mut stream = graph
-                .execute(query(
-                    r#"
-            MATCH (p:Audiobook)
-            RETURN p
-            "#,
-                ))
-                .await
-                .unwrap();
-            while let Some(row) = stream.next().await.unwrap() {
-                match row.get("p") {
-                    Ok(value) => acc.push(value),
-                    Err(e) => log!("{}", e),
-                }
-            }
-            acc
-        })
-        .await
-        .unwrap();
-
-        log!("Query result: {:?}", res.len());
-    } else {
-        warn!("No state");
-    }
-    Ok(())
-}
-
 /// Renders the homepage of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    use crate::ui_components::navbar::Navbar;
-    let count = RwSignal::new(0);
-    let on_click = move |_| *count.write() += 1;
-    let server_fn = move |_| {
-        spawn_local(async {
-            let _ = test_server_fn().await;
-        });
-    };
+    let user_signal = use_context::<ReadSignal<User>>().unwrap();
     view! {
-        <Navbar />
-        <h1>"Welcome to Leptos!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
-        <br />
-        <button class="has-text-primary" on:click=server_fn>
-            "Call server fn"
-        </button>
+        <h1>Welcome to Leptos user { move || user_signal.get().username}!</h1>
         <br />
     }
 }

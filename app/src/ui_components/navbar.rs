@@ -1,6 +1,10 @@
 //! Navbar component and utilities to toggle the `is_active` class.
 
-use crate::ui_components::{searchbar::SearchBar, theme_toggler::ThemeSwitcher};
+use crate::ui_components::{
+    searchbar::SearchBar, theme_toggler::ThemeSwitcher, user_login_component::LoginMenuItem,
+    user_logout_component::LogoutMenuItem, user_register_component::RegisterMenuItem,
+};
+use entities_lib::entities::user::User;
 use leptos::prelude::*;
 use leptos_router::components::A;
 
@@ -11,6 +15,7 @@ pub fn Navbar() -> impl IntoView {
         set_is_active.update(|v| *v = !*v);
     };
     let svg = include_str!("../../../public/temp.svg");
+    let user_signal = use_context::<ReadSignal<User>>().unwrap();
     view! {
         <nav class="navbar has-shadow" role="navigation" aria-label="main navigation">
             <div class="navbar-brand">
@@ -36,17 +41,20 @@ pub fn Navbar() -> impl IntoView {
 
             <div id="top-navbar" class="navbar-menu" class:is-active=is_active>
                 <div class="navbar-start">
+                    <a class="navbar-item">Explore</a>
                     // Navigate the subscriptions.
-                    <div class="navbar-item has-dropdown is-hoverable">
-                        <a class="navbar-link">My subscriptions</a>
+                    <Show when=move || {!user_signal.get().is_guest()}>
+                        <div class="navbar-item has-dropdown is-hoverable">
+                            <a class="navbar-link">My subscriptions</a>
 
-                        <div class="navbar-dropdown">
-                            <a class="navbar-item">By author</a>
-                            <a class="navbar-item is-selected">By series</a>
-                            <a class="navbar-item">By reader</a>
-                            <a class="navbar-item">By search terms</a>
+                            <div class="navbar-dropdown">
+                                <a class="navbar-item">By author</a>
+                                <a class="navbar-item">By series</a>
+                                <a class="navbar-item">By reader</a>
+                                <a class="navbar-item">By search terms</a>
+                            </div>
                         </div>
-                    </div>
+                    </Show>
                     <div class="navbar-item"></div>
                 </div>
 
@@ -67,9 +75,16 @@ pub fn Navbar() -> impl IntoView {
                         </a>
 
                         <div class="navbar-dropdown is-right">
-                            <a class="navbar-item">Settings</a>
-                            <a class="navbar-item">Export subscriptions</a>
-                            <a class="navbar-item">Import subscriptions</a>
+                            <Show when=move || user_signal.get().is_guest()>
+                                <LoginMenuItem />
+                                <RegisterMenuItem />
+                            </Show>
+                            <Show when=move || !user_signal.get().is_guest()>
+                                <LogoutMenuItem />
+                                <a class="navbar-item">Settings</a>
+                                <a class="navbar-item">Export subscriptions</a>
+                                <a class="navbar-item">Import subscriptions</a>
+                            </Show>
                         </div>
                     </div>
                 </div>

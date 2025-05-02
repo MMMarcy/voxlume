@@ -2,15 +2,20 @@ locals {
   postgres_port = 5432
 }
 
+
 resource "docker_container" "postgres_container" {
   name = "postgres_container"
 
   image = docker_image.postgres_docker_image.image_id
   env = toset([
-    "POSTGRES_PASSWORD=${local.postgres_password}"]
+    "POSTGRES_USER=postgres",
+    "POSTGRES_PASSWORD=${local.postgres_password}",
+    "POSTGRES_DB=voxlume"
+    ]
   )
+  user = "root"
   mounts {
-    target = "/usr/local/psql/data"
+    target = "/var/lib/postgresql/data"
     source = "${abspath(path.root)}/../docker_volumes/postgres"
     type   = "bind"
   }

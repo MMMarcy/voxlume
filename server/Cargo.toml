@@ -8,6 +8,9 @@ edition = "2021"
 [dependencies]
 app = { path = "../app", default-features = false, features = ["ssr"] }
 shared = { path = "../shared", default-features = false, features = [] }
+entities_lib = { path = "../model/entities_lib", default-features = false, features = [
+  "ssr",
+] }
 
 
 leptos = { workspace = true }
@@ -16,11 +19,11 @@ leptos_router = { workspace = true }
 leptos_axum = { workspace = true }
 
 anyhow = { workspace = true }
+argon2 = { workspace = true }
 axum = { workspace = true, features = ["macros"] }
 axum_session = { workspace = true }
 axum_session_auth = { workspace = true }
 axum_session_sqlx = { workspace = true }
-base64 = { workspace = true }
 bytes = { workspace = true }
 cfg-if = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
@@ -33,12 +36,15 @@ leptos-use = { workspace = true }
 log = { workspace = true }
 markdown = { workspace = true, optional = false }
 neo4rs = { workspace = true }
+password-hash = { workspace = true }
+pretty_env_logger = { workspace = true }
 prost = { workspace = true }
 rand = { workspace = true }
 reqwest = { workspace = true, features = ["json", "stream"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 sha3 = { workspace = true }
+sqlx = { workspace = true }
 strfmt = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }

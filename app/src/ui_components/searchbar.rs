@@ -36,9 +36,7 @@ fn SyntaxExplainerModal() -> impl IntoView {
             <div class="modal-card">
                 <header class="modal-card-head">
                     <p class="modal-card-title">Modal title</p>
-                    <button class="delete" aria-label="close"
-                        on:click=handle_exit_button
-                    />
+                    <button class="delete" aria-label="close" on:click=handle_exit_button />
                 </header>
                 <section class="modal-card-body">
                     <div class="content">
@@ -111,7 +109,9 @@ fn SyntaxExplainerModal() -> impl IntoView {
                 </section>
                 <footer class="modal-card-foot">
                     <div class="buttons">
-                        <button class="button" on:click=handle_exit_button>Cancel</button>
+                        <button class="button" on:click=handle_exit_button>
+                            Cancel
+                        </button>
                     </div>
                 </footer>
             </div>
@@ -135,7 +135,9 @@ pub fn SearchBar() -> impl IntoView {
                 </span>
             </div>
             <div class="control">
-                <button class="button is-primary is-medium" on:click=activate_modal>Syntax</button>
+                <button class="button is-primary is-medium" on:click=activate_modal>
+                    Syntax
+                </button>
             </div>
         </div>
         <SyntaxExplainerModal />
