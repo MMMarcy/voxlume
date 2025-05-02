@@ -1,14 +1,11 @@
 #![recursion_limit = "256"]
 
-extern crate pretty_env_logger;
-#[macro_use]
-extern crate log;
-
 pub mod args;
 
 // use axum::http::header::HeaderMap;
 use app::{shell, App};
 use argon2::Argon2;
+use args::Environment;
 use axum::{
     body::Body as AxumBody,
     extract::{Path, State},
@@ -29,6 +26,9 @@ use neo4rs::Graph;
 use shared::state::AppState;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
+
+use tracing::info;
+use tracing_subscriber;
 
 use crate::args::Args;
 use shared::auth_user::{AuthSession, SqlUser};
@@ -109,8 +109,15 @@ async fn get_postgres_connection(args: &Args) -> PgPool {
 
 #[tokio::main]
 async fn main() {
-    pretty_env_logger::init();
     let args = Args::parse();
+
+    match args.environment {
+        Environment::DEV => tracing_subscriber::fmt().compact().init(),
+        Environment::PROD => tracing_subscriber::fmt()
+            .json()
+            .with_current_span(false)
+            .init(),
+    }
 
     let conf = get_configuration(None).unwrap();
     let leptos_options = conf.leptos_options;
