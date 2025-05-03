@@ -43,7 +43,7 @@ pub fn Navbar() -> impl IntoView {
                 <div class="navbar-start">
                     <a class="navbar-item">Explore</a>
                     // Navigate the subscriptions.
-                    <Show when=move || {!user_signal.get().is_guest()}>
+                    <Show when=move || { !user_signal.get().is_guest() }>
                         <div class="navbar-item has-dropdown is-hoverable">
                             <a class="navbar-link">My subscriptions</a>
 

@@ -9,8 +9,8 @@ pub async fn register_user(
     password: Option<String>,
 ) -> Result<User, ServerFnError> {
     use argon2::Argon2;
-    use log::{error, info};
     use shared::auth_user::AuthSession;
+    use tracing::{error, info};
 
     use shared::auth_user::SqlUser;
     use sqlx::PgPool;
@@ -72,48 +72,50 @@ pub async fn register_user(
 #[component]
 fn RegisterUsernameField(node_ref: NodeRef<Input>) -> impl IntoView {
     view! {
-      <div class="field mt-2">
-        <label class="label">Username</label>
-        <div class="control has-icons-left has-icons-right">
-          <input
-            node_ref=node_ref
-            class="input"
-            type="text"
-            placeholder="Username here"
-            value=""  />
-          <span class="icon is-small is-left">
-            <i class="fas fa-user"></i>
-          </span>
-          // <span class="icon is-small is-right">
-          //   <i class="fas fa-check"></i>
-          // </span>
-        </div>
+        <div class="field mt-2">
+            <label class="label">Username</label>
+            <div class="control has-icons-left has-icons-right">
+                <input
+                    node_ref=node_ref
+                    class="input"
+                    type="text"
+                    placeholder="Username here"
+                    value=""
+                />
+                <span class="icon is-small is-left">
+                    <i class="fas fa-user"></i>
+                </span>
+            // <span class="icon is-small is-right">
+            // <i class="fas fa-check"></i>
+            // </span>
+            </div>
         // <p class="help is-success">This username is available</p>
-      </div>
+        </div>
     }
 }
 
 #[component]
 fn PasswordField(node_ref: NodeRef<Input>) -> impl IntoView {
     view! {
-      <div class="field mt-2">
-        <label class="label">Password</label>
-        <div class="control has-icons-left has-icons-right">
-          <input
-            node_ref=node_ref
-            class="input"
-            type="password"
-            placeholder="Password"
-            value=""  />
-          <span class="icon is-small is-left">
-            <i class="fas fa-key"></i>
-          </span>
-        //   <span class="icon is-small is-right">
-        //     <i class="fas fa-check"></i>
-        //   </span>
-        </div>
+        <div class="field mt-2">
+            <label class="label">Password</label>
+            <div class="control has-icons-left has-icons-right">
+                <input
+                    node_ref=node_ref
+                    class="input"
+                    type="password"
+                    placeholder="Password"
+                    value=""
+                />
+                <span class="icon is-small is-left">
+                    <i class="fas fa-key"></i>
+                </span>
+            // <span class="icon is-small is-right">
+            // <i class="fas fa-check"></i>
+            // </span>
+            </div>
         // <p class="help is-success">This username is available</p>
-      </div>
+        </div>
     }
 }
 
@@ -152,24 +154,23 @@ pub fn RegisterPage() -> impl IntoView {
         });
     };
     view! {
-      <section class="section is-medium">
-
-
-        <div class="box">
-                <RegisterUsernameField node_ref=username_ref/>
+        <section class="section is-medium">
+            <div class="box">
+                <RegisterUsernameField node_ref=username_ref />
 
                 <PasswordField node_ref=password_ref />
 
                 <div class="field is-grouped mt-5">
                     <div class="control">
-                        <button class="button is-link" on:click=on_submit>Submit</button>
+                        <button class="button is-link" on:click=on_submit>
+                            Submit
+                        </button>
                     </div>
                     <div class="control">
                         <button class="button is-link is-light">Cancel</button>
                     </div>
                 </div>
-
-        </div>
-      </section>
+            </div>
+        </section>
     }
 }

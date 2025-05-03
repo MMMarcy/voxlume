@@ -8,8 +8,8 @@ use axum_session_auth::{Authentication, HasPermission};
 use axum_session_sqlx::SessionPgPool;
 use chrono;
 use entities_lib::entities::user::User;
-use log::{error, info};
 use sqlx::{FromRow, PgPool};
+use tracing::{debug, error, info, instrument, span, warn, Level};
 
 #[derive(FromRow, Clone, Debug)]
 pub struct SqlUser {
@@ -26,8 +26,12 @@ pub type AuthSession = axum_session_auth::AuthSession<SqlUser, i64, SessionPgPoo
 impl Authentication<SqlUser, i64, PgPool> for SqlUser {
     // This is run when the user has logged in and has not yet been Cached in the system.
     // Once ran it will load and cache the user.
+    #[instrument]
     async fn load_user(userid: i64, pool: Option<&PgPool>) -> Result<SqlUser> {
+        let span = span!(Level::TRACE, "load_user");
+        let _guard = span.enter();
         if userid == 1 {
+            warn!("Trying to log in default user");
             return Ok(SqlUser {
                 id: userid,
                 username: "Guest".to_string(),
@@ -36,6 +40,7 @@ impl Authentication<SqlUser, i64, PgPool> for SqlUser {
                 last_access: chrono::Utc::now(),
             });
         }
+        debug!("Loading user with id {}", userid);
         let db = pool.unwrap();
         let get_user_result = sqlx::query_as::<_, SqlUser>(
             r#"
@@ -49,8 +54,17 @@ impl Authentication<SqlUser, i64, PgPool> for SqlUser {
         .await?;
 
         match get_user_result {
-            Some(user) => Ok(user),
-            None => Err(anyhow!("No user found")),
+            Some(user) => {
+                info!("User (id:{}) loaded", userid);
+                Ok(user)
+            }
+            None => {
+                error!(
+                    "User (id:{}) couldn't be loaded as it wasn't found in the db.",
+                    userid
+                );
+                Err(anyhow!("No user found"))
+            }
         }
     }
 
@@ -105,6 +119,7 @@ impl SqlUser {
         };
     }
 
+    #[instrument]
     async fn get_user_from_username(
         username: String,
         db_connection_pool: &PgPool,
@@ -127,6 +142,7 @@ impl SqlUser {
         }
     }
 
+    #[instrument]
     pub async fn login_user(
         username: String,
         password: String,
@@ -135,21 +151,29 @@ impl SqlUser {
     ) -> Result<SqlUser> {
         let maybe_user = Self::get_user_from_username(username, db_connection_pool).await;
 
-        if let Some(user) = maybe_user {
-            // TODO: Fix this with a match.
-            let parsed_hash =
-                PasswordHash::new(&user.password_mcf).expect("Couldn't parse stored hash");
-            match argon2_params.verify_password(password.as_bytes(), &parsed_hash) {
-                Ok(_) => return Ok(user),
-                Err(_) => {
-                    error!("Password's don't match");
-                    return Err(anyhow!(String::from("Password's don't match")));
+        match maybe_user {
+            Some(user) => {
+                // TODO: Fix this with a match.
+                let maybe_parsed_hash = PasswordHash::new(&user.password_mcf);
+                if let Ok(parsed_hash) = maybe_parsed_hash {
+                    match argon2_params.verify_password(password.as_bytes(), &parsed_hash) {
+                        Ok(_) => return Ok(user),
+                        Err(_) => {
+                            error!("Password's don't match");
+                            return Err(anyhow!(String::from("Password's don't match")));
+                        }
+                    }
+                } else {
+                    let err = maybe_parsed_hash.unwrap_err().clone();
+                    error!("Couldn't generate hash password due to {:?}", err);
+                    return Err(anyhow!(err));
                 }
             }
+            None => return Err(anyhow!(String::from("User not found"))),
         }
-        return Err(anyhow!(String::from("User not found")));
     }
 
+    #[instrument]
     pub async fn register_user(self: Self, db_connection_pool: &PgPool) -> Result<SqlUser> {
         sqlx::query(
             r#"

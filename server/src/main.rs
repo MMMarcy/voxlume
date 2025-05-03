@@ -28,7 +28,7 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 
 use tracing::info;
-use tracing_subscriber;
+use tracing_subscriber::{self, fmt::format::FmtSpan};
 
 use crate::args::Args;
 use shared::auth_user::{AuthSession, SqlUser};
@@ -112,12 +112,21 @@ async fn main() {
     let args = Args::parse();
 
     match args.environment {
-        Environment::DEV => tracing_subscriber::fmt().compact().init(),
+        // TODO: In dev it is a bit too verbose. Especially the timestamp field. Find a way to
+        // format that.
+        Environment::DEV => tracing_subscriber::fmt()
+            .pretty()
+            .with_target(true)
+            .with_span_events(FmtSpan::CLOSE) // Or FmtSpan::ENTER, FmtSpan::CLOSE etc.
+            .init(),
+
+        // TODO: Add a sink to disk for logs.
         Environment::PROD => tracing_subscriber::fmt()
             .json()
+            .with_span_events(FmtSpan::CLOSE) // Or FmtSpan::ENTER, FmtSpan::CLOSE etc.
             .with_current_span(false)
             .init(),
-    }
+    };
 
     let conf = get_configuration(None).unwrap();
     let leptos_options = conf.leptos_options;

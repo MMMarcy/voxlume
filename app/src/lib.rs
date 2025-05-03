@@ -39,12 +39,17 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 
 #[server(GetCurrentUser, "/api")]
 pub async fn get_current_user() -> Result<Option<User>, ServerFnError> {
-    use log::{debug, error, info};
     use shared::auth_user::AuthSession;
+    use tracing::{debug, error, span, Level};
+
+    let span = span!(Level::TRACE, "get_current_user");
+    let _guard = span.enter();
 
     if let Some(auth) = use_context::<AuthSession>() {
-        info!("Authsession available");
-        return Ok(auth.current_user.clone().map(|v| v.into_user()));
+        debug!("Authsession available");
+        let maybe_current_user = Ok(auth.current_user.clone().map(|v| v.into_user()));
+        debug!("Maybe current_user: {:?}", maybe_current_user);
+        return maybe_current_user;
     } else {
         error!("Authsession not available");
         return Err(ServerFnError::new("No auth context found."));
@@ -101,7 +106,7 @@ pub fn App() -> impl IntoView {
 fn HomePage() -> impl IntoView {
     let user_signal = use_context::<ReadSignal<User>>().unwrap();
     view! {
-        <h1>Welcome to Leptos user { move || user_signal.get().username}!</h1>
+        <h1>Welcome to Leptos user {move || user_signal.get().username}!</h1>
         <br />
     }
 }

@@ -25,7 +25,6 @@ axum_session_sqlx = { workspace = true }
 chrono = { workspace = true }
 futures-util = { workspace = true }
 indoc = { workspace = true }
-log = { workspace = true }
 markdown = { workspace = true }
 neo4rs = { workspace = true }
 password-hash = { workspace = true }

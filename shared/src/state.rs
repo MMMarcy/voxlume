@@ -15,12 +15,11 @@ pub struct AppState {
     pub routes: Vec<AxumRouteListing>,
 }
 
-// pub fn get_db_conn() -> Result<PgPool, ServerFnError> {
-//     use_context::<AppState>()
-//         .map(|s| s.pg_pool)
-//         .ok_or_else(|| ServerFnError::ServerError("DB connection missing.".into()))
-// }
-//
+pub fn get_db_conn() -> Result<PgPool, ServerFnError> {
+    use_context::<AppState>()
+        .map(|s| s.pg_pool)
+        .ok_or_else(|| ServerFnError::ServerError("DB connection missing.".into()))
+}
 pub fn get_neo4j_conn() -> Result<Graph, ServerFnError> {
     use_context::<AppState>()
         .map(|s| s.graph)

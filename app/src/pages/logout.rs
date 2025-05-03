@@ -5,8 +5,8 @@ use leptos_router::hooks::use_navigate;
 
 #[server(LogoutUser, "/api")]
 pub async fn logout_user() -> Result<(), ServerFnError> {
-    use log::{debug, error, info, warn};
     use shared::auth_user::AuthSession;
+    use tracing::{debug, error, info, warn};
 
     debug!("Inside logout user");
 

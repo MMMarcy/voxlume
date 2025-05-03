@@ -9,8 +9,8 @@ pub async fn login_user(
     password: Option<String>,
 ) -> Result<User, ServerFnError> {
     use argon2::Argon2;
-    use log::{debug, error, info};
     use shared::auth_user::AuthSession;
+    use tracing::{debug, error, info};
 
     use shared::auth_user::SqlUser;
     use sqlx::PgPool;
@@ -71,40 +71,42 @@ pub async fn login_user(
 #[component]
 fn LoginUsernameField(node_ref: NodeRef<Input>) -> impl IntoView {
     view! {
-      <div class="field mt-2">
-        <label class="label">Username</label>
-        <div class="control has-icons-left has-icons-right">
-          <input
-            node_ref=node_ref
-            class="input"
-            type="text"
-            placeholder="Username here"
-            value=""  />
-          <span class="icon is-small is-left">
-            <i class="fas fa-user"></i>
-          </span>
+        <div class="field mt-2">
+            <label class="label">Username</label>
+            <div class="control has-icons-left has-icons-right">
+                <input
+                    node_ref=node_ref
+                    class="input"
+                    type="text"
+                    placeholder="Username here"
+                    value=""
+                />
+                <span class="icon is-small is-left">
+                    <i class="fas fa-user"></i>
+                </span>
+            </div>
         </div>
-      </div>
     }
 }
 
 #[component]
 fn PasswordField(node_ref: NodeRef<Input>) -> impl IntoView {
     view! {
-      <div class="field mt-2">
-        <label class="label">Password</label>
-        <div class="control has-icons-left has-icons-right">
-          <input
-            node_ref=node_ref
-            class="input"
-            type="password"
-            placeholder="Password"
-            value=""  />
-          <span class="icon is-small is-left">
-            <i class="fas fa-key"></i>
-          </span>
+        <div class="field mt-2">
+            <label class="label">Password</label>
+            <div class="control has-icons-left has-icons-right">
+                <input
+                    node_ref=node_ref
+                    class="input"
+                    type="password"
+                    placeholder="Password"
+                    value=""
+                />
+                <span class="icon is-small is-left">
+                    <i class="fas fa-key"></i>
+                </span>
+            </div>
         </div>
-      </div>
     }
 }
 
@@ -143,24 +145,25 @@ pub fn LoginPage() -> impl IntoView {
         });
     };
     view! {
-      <section class="section is-medium">
+        <section class="section is-medium">
 
-
-        <div class="box">
-                <LoginUsernameField node_ref=username_ref/>
+            <div class="box">
+                <LoginUsernameField node_ref=username_ref />
 
                 <PasswordField node_ref=password_ref />
 
                 <div class="field is-grouped mt-5">
                     <div class="control">
-                        <button class="button is-link" on:click=on_submit>Submit</button>
+                        <button class="button is-link" on:click=on_submit>
+                            Submit
+                        </button>
                     </div>
                     <div class="control">
                         <button class="button is-link is-light">Cancel</button>
                     </div>
                 </div>
 
-        </div>
-      </section>
+            </div>
+        </section>
     }
 }
