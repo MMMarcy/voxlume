@@ -3559,7 +3559,6 @@ dependencies = [
  "leptos_axum",
  "leptos_meta",
  "leptos_router",
- "log",
  "markdown",
  "neo4rs",
  "password-hash",

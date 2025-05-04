@@ -32,11 +32,11 @@ fn local_storage() -> Option<web_sys::Storage> {
     // TODO: Maybe we don't need these cfg statements or maybe it is possible to use cfg_if.
     #[cfg(feature = "hydrate")]
     {
-        window().local_storage().unwrap()
+        return window().local_storage().unwrap();
     }
     #[cfg(feature = "ssr")]
     {
-        None // Return None on the server
+        return None; // Return None on the server
     }
 }
 

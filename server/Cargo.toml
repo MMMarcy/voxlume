@@ -33,7 +33,6 @@ hex-literal = { workspace = true }
 http = { workspace = true }
 indoc = { workspace = true }
 leptos-use = { workspace = true }
-log = { workspace = true }
 markdown = { workspace = true, optional = false }
 neo4rs = { workspace = true }
 password-hash = { workspace = true }
