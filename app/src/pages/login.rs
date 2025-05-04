@@ -8,53 +8,38 @@ pub async fn login_user(
     username: Option<String>,
     password: Option<String>,
 ) -> Result<User, ServerFnError> {
-    use argon2::Argon2;
     use shared::auth_user::AuthSession;
+    use shared::state::AppState;
     use tracing::{debug, error, info};
 
     use shared::auth_user::SqlUser;
-    use sqlx::PgPool;
 
-    if username.is_none() {
-        return Err(ServerFnError::new("Username can't be null"));
-    }
-
-    if password.is_none() {
-        return Err(ServerFnError::new("Password can't be null"));
-    }
-    info!("Checked inputs. They are ok");
+    let username = {
+        let username_err: ServerFnError = ServerFnError::Args("Username must be defined".into());
+        username.ok_or(username_err)?
+    };
+    let password = {
+        let password_err: ServerFnError = ServerFnError::Args("Password must be defined".into());
+        password.ok_or(password_err)?
+    };
+    debug!("Checked inputs. They are ok");
 
     let maybe_auth = use_context::<AuthSession>();
-    let maybe_db = use_context::<PgPool>();
-    let maybe_argon2 = use_context::<Argon2<'_>>();
-
     if maybe_auth.is_none() {
         return Err(ServerFnError::new("Couldn't retrieve auth context"));
     }
-    info!("Auth context is available");
-
-    if maybe_db.is_none() {
-        return Err(ServerFnError::new("Couldn't retreive psql connection"));
-    }
-    info!("Db connection context is available");
-
-    if maybe_argon2.is_none() {
-        return Err(ServerFnError::new("Couldn't retrieve argon2 params."));
-    }
-    info!("Argon2 params are available");
+    debug!("Auth context is available");
 
     let auth = maybe_auth.unwrap();
-    let db_pool = maybe_db.unwrap();
-    let argon2 = maybe_argon2.unwrap();
+    let db_pool = AppState::get_db_conn()?;
+    let argon2 = AppState::get_argon2_params()?;
 
     info!(
-        "Fn get_current_user: {:?}",
-        auth.current_user.clone().map(|u| u.into_user())
+        "Is current user available: {:?}",
+        auth.current_user.is_some()
     );
 
-    // Unwrapping username and password are safe ops because we checked them above.
-    let maybe_logged_in_user =
-        SqlUser::login_user(username.unwrap(), password.unwrap(), &db_pool, argon2).await;
+    let maybe_logged_in_user = SqlUser::login_user(username, password, &db_pool, argon2).await;
     match maybe_logged_in_user {
         Ok(sql_user) => {
             auth.login_user(sql_user.id);

@@ -8,51 +8,39 @@ pub async fn register_user(
     username: Option<String>,
     password: Option<String>,
 ) -> Result<User, ServerFnError> {
-    use argon2::Argon2;
     use shared::auth_user::AuthSession;
-    use tracing::{error, info};
+    use shared::state::AppState;
+    use tracing::{debug, error, info};
 
     use shared::auth_user::SqlUser;
-    use sqlx::PgPool;
 
-    if username.is_none() {
-        return Err(ServerFnError::new("Username can't be null"));
-    }
-
-    if password.is_none() {
-        return Err(ServerFnError::new("Password can't be null"));
-    }
-    info!("Checked inputs. They are ok");
+    let username = {
+        let username_err: ServerFnError = ServerFnError::Args("Username must be defined".into());
+        username.ok_or(username_err)?
+    };
+    let password = {
+        let password_err: ServerFnError = ServerFnError::Args("Password must be defined".into());
+        password.ok_or(password_err)?
+    };
+    debug!("Checked inputs. They are ok");
 
     let maybe_auth = use_context::<AuthSession>();
-    let maybe_db = use_context::<PgPool>();
-    let maybe_argon2 = use_context::<Argon2>();
 
     if maybe_auth.is_none() {
         return Err(ServerFnError::new("Couldn't retrieve auth context"));
     }
-    info!("Auth context is available");
-
-    if maybe_db.is_none() {
-        return Err(ServerFnError::new("Couldn't retreive psql connection"));
-    }
-    info!("Db connection context is available");
-
-    if maybe_argon2.is_none() {
-        return Err(ServerFnError::new("Couldn't retrieve argon2 params."));
-    }
-    info!("Argon2 params are available");
-
+    debug!("Auth context is available");
     let auth = maybe_auth.unwrap();
-    let db_pool = maybe_db.unwrap();
-    let argon2 = maybe_argon2.unwrap();
 
-    info!(
+    let db_pool = AppState::get_db_conn()?;
+    let argon2 = AppState::get_argon2_params()?;
+
+    debug!(
         "Fn get_current_user: {:?}",
         auth.current_user.clone().map(|u| u.into_user())
     );
 
-    let local_user = SqlUser::create_local_user(username.unwrap(), password.unwrap(), argon2).await;
+    let local_user = SqlUser::create_local_user(username, password, argon2).await;
 
     info!("Fn get_current_user: {:?}", &local_user);
     match local_user.register_user(&db_pool).await {

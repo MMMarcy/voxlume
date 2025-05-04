@@ -26,7 +26,7 @@ pub type AuthSession = axum_session_auth::AuthSession<SqlUser, i64, SessionPgPoo
 impl Authentication<SqlUser, i64, PgPool> for SqlUser {
     // This is run when the user has logged in and has not yet been Cached in the system.
     // Once ran it will load and cache the user.
-    #[instrument]
+    #[instrument(skip_all)]
     async fn load_user(userid: i64, pool: Option<&PgPool>) -> Result<SqlUser> {
         let span = span!(Level::TRACE, "load_user");
         let _guard = span.enter();
@@ -119,7 +119,7 @@ impl SqlUser {
         };
     }
 
-    #[instrument]
+    #[instrument(skip_all)]
     async fn get_user_from_username(
         username: String,
         db_connection_pool: &PgPool,
@@ -142,7 +142,7 @@ impl SqlUser {
         }
     }
 
-    #[instrument]
+    #[instrument(skip_all)]
     pub async fn login_user(
         username: String,
         password: String,
@@ -173,7 +173,7 @@ impl SqlUser {
         }
     }
 
-    #[instrument]
+    #[instrument(skip_all)]
     pub async fn register_user(self: Self, db_connection_pool: &PgPool) -> Result<SqlUser> {
         sqlx::query(
             r#"

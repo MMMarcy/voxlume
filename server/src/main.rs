@@ -44,9 +44,7 @@ async fn server_fn_handler(
     handle_server_fns_with_context(
         move || {
             provide_context(auth_session.clone());
-            provide_context(app_state.pg_pool.clone());
             provide_context(app_state.clone());
-            provide_context(Argon2::default());
         },
         request,
     )
@@ -66,6 +64,7 @@ async fn leptos_routes_handler(
             provide_context(auth_session.clone());
             provide_context(app_state.pg_pool.clone());
             provide_context(app_state.graph.clone());
+            provide_context(app_state.argon2_params.clone());
         },
         move || shell(app_state.leptos_options.clone()),
     );
@@ -148,6 +147,7 @@ async fn main() {
         graph,
         pg_pool: pg_pool.clone(),
         routes: routes.clone(),
+        argon2_params: Argon2::default(),
     };
     // Build our application with a route
     let binary = Router::new()
