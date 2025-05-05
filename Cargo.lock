@@ -3461,6 +3461,7 @@ dependencies = [
  "rand 0.9.1",
  "serde",
  "serde_json",
+ "shaku",
  "sqlx",
  "strfmt",
  "tracing",

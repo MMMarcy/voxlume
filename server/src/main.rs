@@ -31,7 +31,8 @@ use tracing::info;
 use tracing_subscriber::{self, fmt::format::FmtSpan};
 
 use crate::args::Args;
-use shared::auth_user::{AuthSession, SqlUser};
+use shared::auth_user::AuthSession;
+use shared::sql_user::SqlUser;
 
 async fn server_fn_handler(
     State(app_state): State<AppState>,

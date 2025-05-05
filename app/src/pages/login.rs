@@ -12,7 +12,7 @@ pub async fn login_user(
     use shared::state::AppState;
     use tracing::{debug, error, info};
 
-    use shared::auth_user::SqlUser;
+    use shared::sql_user::SqlUser;
 
     let username = {
         let username_err: ServerFnError = ServerFnError::Args("Username must be defined".into());
@@ -39,7 +39,7 @@ pub async fn login_user(
         auth.current_user.is_some()
     );
 
-    let maybe_logged_in_user = SqlUser::login_user(username, password, &db_pool, argon2).await;
+    let maybe_logged_in_user = SqlUser::login_user(username, password, &db_pool, &argon2).await;
     match maybe_logged_in_user {
         Ok(sql_user) => {
             auth.login_user(sql_user.id);

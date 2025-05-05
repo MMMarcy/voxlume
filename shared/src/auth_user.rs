@@ -1,24 +1,13 @@
 use anyhow::{anyhow, Result};
-use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-    Argon2,
-};
 use async_trait::async_trait;
 use axum_session_auth::{Authentication, HasPermission};
 use axum_session_sqlx::SessionPgPool;
 use chrono;
 use entities_lib::entities::user::User;
-use sqlx::{FromRow, PgPool};
-use tracing::{debug, error, info, instrument, span, warn, Level};
+use sqlx::PgPool;
+use tracing::{error, info, instrument, span, Level};
 
-#[derive(FromRow, Clone, Debug)]
-pub struct SqlUser {
-    pub id: i64,
-    pub username: String,
-    pub anonymous: bool,
-    pub password_mcf: String,
-    pub last_access: chrono::DateTime<chrono::Utc>,
-}
+use crate::{db_trait::DbConnectionLike, password_handler::PasswordHandlerLike, sql_user::SqlUser};
 
 pub type AuthSession = axum_session_auth::AuthSession<SqlUser, i64, SessionPgPool, PgPool>;
 
@@ -30,30 +19,9 @@ impl Authentication<SqlUser, i64, PgPool> for SqlUser {
     async fn load_user(userid: i64, pool: Option<&PgPool>) -> Result<SqlUser> {
         let span = span!(Level::TRACE, "load_user");
         let _guard = span.enter();
-        if userid == 1 {
-            warn!("Trying to log in default user");
-            return Ok(SqlUser {
-                id: userid,
-                username: "Guest".to_string(),
-                anonymous: true,
-                password_mcf: "".to_string(),
-                last_access: chrono::Utc::now(),
-            });
-        }
-        debug!("Loading user with id {}", userid);
-        let db = pool.unwrap();
-        let get_user_result = sqlx::query_as::<_, SqlUser>(
-            r#"
-            SELECT *
-            FROM users
-            WHERE id = $1
-        "#,
-        )
-        .bind(userid)
-        .fetch_optional(db)
-        .await?;
+        let db_connection = pool.ok_or(anyhow!("Connection pool not available".to_string()))?;
 
-        match get_user_result {
+        match db_connection.get_user_by_id(userid).await? {
             Some(user) => {
                 info!("User (id:{}) loaded", userid);
                 Ok(user)
@@ -101,15 +69,11 @@ impl SqlUser {
     pub async fn create_local_user(
         username: String,
         password: String,
-        argon2_params: Argon2<'_>,
+        password_handler: &impl PasswordHandlerLike,
     ) -> SqlUser {
-        let salt = SaltString::generate(&mut OsRng);
-        // TODO: Check if the following expect can fail.
-        let password_hash = argon2_params
-            .hash_password(password.as_bytes(), &salt)
-            .expect("Couldn't hash password")
-            .to_string();
-
+        let password_hash = password_handler
+            .generate_password_hash(&password)
+            .expect("It shouldn't be possible for this to fail :/");
         return SqlUser {
             id: -1,
             username,
@@ -120,87 +84,29 @@ impl SqlUser {
     }
 
     #[instrument(skip_all)]
-    async fn get_user_from_username(
-        username: String,
-        db_connection_pool: &PgPool,
-    ) -> Option<SqlUser> {
-        let get_user_result = sqlx::query_as::<_, SqlUser>(
-            r#"
-            SELECT *
-            FROM users
-            WHERE username = $1
-        "#,
-        )
-        .bind(username)
-        .fetch_optional(db_connection_pool)
-        .await;
-
-        if let Ok(Some(user)) = get_user_result {
-            Some(user)
-        } else {
-            None
-        }
-    }
-
-    #[instrument(skip_all)]
     pub async fn login_user(
         username: String,
         password: String,
-        db_connection_pool: &PgPool,
-        argon2_params: Argon2<'_>,
+        db_connection_pool: &impl DbConnectionLike,
+        password_handler: &impl PasswordHandlerLike,
     ) -> Result<SqlUser> {
-        let maybe_user = Self::get_user_from_username(username, db_connection_pool).await;
+        let maybe_user = db_connection_pool.get_user_by_username(&username).await;
 
         match maybe_user {
-            Some(user) => {
-                // TODO: Fix this with a match.
-                let maybe_parsed_hash = PasswordHash::new(&user.password_mcf);
-                if let Ok(parsed_hash) = maybe_parsed_hash {
-                    match argon2_params.verify_password(password.as_bytes(), &parsed_hash) {
-                        Ok(_) => return Ok(user),
-                        Err(_) => {
-                            error!("Password's don't match");
-                            return Err(anyhow!(String::from("Password's don't match")));
-                        }
-                    }
-                } else {
-                    let err = maybe_parsed_hash.unwrap_err().clone();
-                    error!("Couldn't generate hash password due to {:?}", err);
-                    return Err(anyhow!(err));
-                }
-            }
-            None => return Err(anyhow!(String::from("User not found"))),
+            Some(user) => password_handler
+                .validate_password_against_mcf(&user.password_mcf, &password)
+                .map(|_| user),
+            None => Err(anyhow!(String::from("User not found"))),
         }
     }
 
     #[instrument(skip_all)]
     pub async fn register_user(self: Self, db_connection_pool: &PgPool) -> Result<SqlUser> {
-        sqlx::query(
-            r#"
-            INSERT INTO users (
-                username,
-                anonymous,
-                password_mcf,
-                last_access
-            ) VALUES (
-                $1,
-                $2,
-                $3,
-                $4
-            );
-        "#,
-        )
-        .bind(self.username.clone())
-        .bind(false)
-        .bind(self.password_mcf.clone())
-        .bind(self.last_access.clone())
-        .execute(db_connection_pool)
-        .await?;
-
-        Ok(
-            Self::get_user_from_username(self.username, db_connection_pool)
-                .await
-                .unwrap(),
-        )
+        let username = &self.username.clone();
+        db_connection_pool.insert_user(self).await?;
+        match db_connection_pool.get_user_by_username(username).await {
+            Some(user) => Ok(user),
+            None => Err(anyhow!("Problems in inserting user into the db".to_string())),
+        }
     }
 }
