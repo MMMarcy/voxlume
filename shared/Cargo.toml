@@ -25,14 +25,11 @@ axum_session_sqlx = { workspace = true }
 chrono = { workspace = true }
 futures-util = { workspace = true }
 indoc = { workspace = true }
-markdown = { workspace = true }
 neo4rs = { workspace = true }
 password-hash = { workspace = true }
 rand = { workspace = true }
-reqwest = { workspace = true, features = ["json", "stream"] }
 serde.workspace = true
 serde_json.workspace = true
-sha3 = { workspace = true }
 sqlx = { workspace = true }
 strfmt = { workspace = true }
 tracing = { workspace = true }
