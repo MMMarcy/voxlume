@@ -45,6 +45,9 @@ async fn server_fn_handler(
         move || {
             provide_context(auth_session.clone());
             provide_context(app_state.clone());
+            provide_context(app_state.graph.clone());
+            provide_context(app_state.password_handler.clone());
+            provide_context(app_state.database_connection_pool.clone());
         },
         request,
     )

@@ -33,11 +33,11 @@ impl AppState {
         }
     }
     pub fn get_neo4j_conn() -> Result<Graph, ServerFnError> {
-        if let Some(ctx) = use_context::<AppState>() {
-            Ok(ctx.graph)
+        if let Some(graph) = use_context::<Graph>() {
+            Ok(graph)
         } else {
             Err(ServerFnError::ServerError(
-                "Couldn't find the context.".into(),
+                "Couldn't find the graph in the context.".into(),
             ))
         }
     }

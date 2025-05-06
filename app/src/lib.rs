@@ -1,3 +1,10 @@
+pub mod pages;
+pub mod ui_components;
+
+use crate::pages::homepage::HomePage;
+use crate::pages::login::LoginPage;
+use crate::pages::logout::LogoutPage;
+use crate::pages::register::RegisterPage;
 use entities_lib::entities::user::User;
 use leptos::logging::debug_warn;
 use leptos::prelude::*;
@@ -6,13 +13,6 @@ use leptos_router::{
     components::{Route, Router, Routes},
     StaticSegment,
 };
-use pages::logout::LogoutPage;
-
-pub mod pages;
-pub mod ui_components;
-
-use crate::pages::login::LoginPage;
-use crate::pages::register::RegisterPage;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -98,15 +98,5 @@ pub fn App() -> impl IntoView {
                 </Routes>
             </main>
         </Router>
-    }
-}
-
-/// Renders the homepage of your application.
-#[component]
-fn HomePage() -> impl IntoView {
-    let user_signal = use_context::<ReadSignal<User>>().unwrap();
-    view! {
-        <h1>Welcome to Leptos user {move || user_signal.get().username}!</h1>
-        <br />
     }
 }
