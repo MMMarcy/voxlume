@@ -1,13 +1,12 @@
 use anyhow::{anyhow, Result};
 use argon2::password_hash::{rand_core::OsRng, PasswordHasher, SaltString};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use shaku::Interface; // Added Result and anyhow import
 
 /// A trait for handling password hashing and verification.
 ///
 /// This trait abstracts the specific password hashing algorithm used.
 /// It requires `Send + Sync` to be safely used across threads.
-pub trait PasswordHandlerLike: Interface + Send + Sync {
+pub trait PasswordHandlerLike: Send + Sync {
     /// Validates a provided password against a Modular Crypt Format (MCF) string.
     ///
     /// # Arguments

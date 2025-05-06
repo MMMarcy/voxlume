@@ -32,8 +32,8 @@ pub async fn register_user(
     debug!("Auth context is available");
     let auth = maybe_auth.unwrap();
 
-    let db_pool = AppState::get_db_conn()?;
-    let argon2 = AppState::get_argon2_params()?;
+    let db_pool = AppState::get_database_connection_pool()?;
+    let argon2 = AppState::get_password_handler()?;
 
     debug!(
         "Fn get_current_user: {:?}",

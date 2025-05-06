@@ -2,7 +2,6 @@
 
 pub mod args;
 
-// use axum::http::header::HeaderMap;
 use app::{shell, App};
 use argon2::Argon2;
 use args::Environment;
@@ -63,9 +62,9 @@ async fn leptos_routes_handler(
         app_state.routes.clone(),
         move || {
             provide_context(auth_session.clone());
-            provide_context(app_state.pg_pool.clone());
+            provide_context(app_state.database_connection_pool.clone());
             provide_context(app_state.graph.clone());
-            provide_context(app_state.argon2_params.clone());
+            provide_context(app_state.password_handler.clone());
         },
         move || shell(app_state.leptos_options.clone()),
     );
@@ -146,9 +145,9 @@ async fn main() {
     let app_state = AppState {
         leptos_options,
         graph,
-        pg_pool: pg_pool.clone(),
+        database_connection_pool: pg_pool.clone(),
         routes: routes.clone(),
-        argon2_params: Argon2::default(),
+        password_handler: Argon2::default(),
     };
     // Build our application with a route
     let binary = Router::new()

@@ -8,21 +8,24 @@ use leptos::prelude::ServerFnError;
 use leptos_axum::AxumRouteListing;
 use neo4rs::Graph;
 use sqlx::postgres::PgPool;
+
+use crate::db_trait::DbConnectionLike;
+use crate::password_handler::PasswordHandlerLike;
 /// This takes advantage of Axum's `SubStates` feature by deriving `FromRef`. This is the only way to have more than one
 /// item in Axum's State. Leptos requires you to have leptosOptions in your State struct for the leptos route handlers
 #[derive(Clone, FromRef)]
 pub struct AppState {
     pub leptos_options: LeptosOptions,
     pub graph: Graph,
-    pub pg_pool: PgPool,
+    pub database_connection_pool: PgPool,
     pub routes: Vec<AxumRouteListing>,
-    pub argon2_params: Argon2<'static>,
+    pub password_handler: Argon2<'static>,
 }
 
 impl AppState {
-    pub fn get_db_conn() -> Result<PgPool, ServerFnError> {
+    pub fn get_database_connection_pool() -> Result<impl DbConnectionLike, ServerFnError> {
         if let Some(ctx) = use_context::<AppState>() {
-            Ok(ctx.pg_pool)
+            Ok(ctx.database_connection_pool)
         } else {
             Err(ServerFnError::ServerError(
                 "Couldn't find the context.".into(),
@@ -39,9 +42,9 @@ impl AppState {
         }
     }
 
-    pub fn get_argon2_params() -> Result<Argon2<'static>, ServerFnError> {
+    pub fn get_password_handler() -> Result<impl PasswordHandlerLike, ServerFnError> {
         if let Some(ctx) = use_context::<AppState>() {
-            Ok(ctx.argon2_params)
+            Ok(ctx.password_handler)
         } else {
             Err(ServerFnError::ServerError(
                 "Couldn't find the context.".into(),

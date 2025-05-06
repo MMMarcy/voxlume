@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
-use shaku::Interface;
 use sqlx::PgPool;
 use tracing::instrument;
 use tracing::{debug, warn};
@@ -8,9 +7,9 @@ use tracing::{debug, warn};
 use crate::sql_user::SqlUser;
 
 /// Represents a connection to a database that can perform user-related operations.
-/// This trait is designed to be used with dependency injection (`shaku::Interface`).
+/// This trait is designed to be used with dependency injection at some point.
 #[async_trait]
-pub trait DbConnectionLike: Interface + Send + Sync {
+pub trait DbConnectionLike: Send + Sync {
     /// Retrieves a user from the database based on their username.
     ///
     /// # Arguments
