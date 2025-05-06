@@ -101,7 +101,10 @@ impl SqlUser {
     }
 
     #[instrument(skip_all)]
-    pub async fn register_user(self: Self, db_connection_pool: &PgPool) -> Result<SqlUser> {
+    pub async fn register_user(
+        self: Self,
+        db_connection_pool: &impl DbConnectionLike,
+    ) -> Result<SqlUser> {
         let username = &self.username.clone();
         db_connection_pool.insert_user(self).await?;
         match db_connection_pool.get_user_by_username(username).await {
