@@ -3,12 +3,17 @@
 import time
 from collections.abc import Callable
 from queue import LifoQueue
-from typing import TypeVar, cast
+from typing import Any, TypeVar, cast
 
+import redis
 import requests
 from absl import app, flags
 from bs4 import BeautifulSoup
-from langchain_core.language_models import BaseLanguageModel, LanguageModelInput
+from langchain_core.language_models import (
+    BaseLLM,
+    BaseLanguageModel,
+    LanguageModelInput,
+)
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import Runnable
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -17,6 +22,9 @@ from neo4j import Driver, GraphDatabase
 from pydantic import BaseModel
 from random_user_agent.user_agent import UserAgent
 from rich.pretty import pprint
+
+from functools import partial
+from redis import Redis
 
 from python_cli.db.neo4j import store_audiobook_in_neo4j
 from python_cli.entities import (
@@ -48,6 +56,18 @@ _DB_PASSWORD = flags.DEFINE_string(
 
 _DB_URI = flags.DEFINE_string(
     name="neo4j_uri", help="URI of the neo4j instance", default="neo4j://localhost:7687"
+)
+
+_REDIS_HOST = flags.DEFINE_string(
+    name="redis_host", help="The host running redis", default="localhost"
+)
+
+_REDIS_PORT = flags.DEFINE_integer(
+    name="redis_port", help="The port running redis", default=6379
+)
+
+_REDIS_PASSOWRD = flags.DEFINE_string(
+    name="redis_password", help="Redis password", default="password"
 )
 
 _PAGE_START = flags.DEFINE_integer(
@@ -183,71 +203,92 @@ def merge_url_parts(part1: str, part2: str) -> str:
     return f"{cleaned_part1}/{cleaned_part2}"
 
 
+def handler(
+    message: dict[str, Any],
+    redis: Redis,
+    topic_name: str,
+    parse_new_entries_page_llm: Any,
+    parse_book_page_llm: Any,
+    neo4j: Driver,
+):
+    logger.info(f"Getting item pubsub topic.")
+    queue_item = QueueItem.model_validate_json(message["data"])
+    match queue_item.queue_item_type:
+        case QueueItemType.PAGE_WITH_NEW_ENTRIES:
+            logger.info(f"Parsing page with new entries. URL = {queue_item.url}")
+            submission_list: NewSubmissionList | None = retrieve_and_parse_page(
+                url=queue_item.url,
+                llm=parse_new_entries_page_llm,
+                filtering_fn=extract_only_new_submissions_table,
+            )
+            if submission_list is None:
+                raise RuntimeError()
+            for submission in submission_list.submissions:
+                redis.publish(
+                    topic_name,
+                    QueueItem(
+                        queue_item_type=QueueItemType.PAGE_WITH_AUDIOBOOK_METADATA,
+                        url=submission.url,
+                    ).model_dump_json(),
+                )
+        case QueueItemType.PAGE_WITH_AUDIOBOOK_METADATA:
+            complete_url = merge_url_parts(_BASE_URL.value, queue_item.url)
+            logger.info(f"Parsing page with audiobook metadata. PATH = {complete_url}")
+            audiobook_metadata = retrieve_and_parse_page(
+                url=complete_url,
+                llm=parse_book_page_llm,
+                filtering_fn=extract_only_post_info,
+            )
+            if audiobook_metadata:
+                store_audiobook_in_neo4j(
+                    driver=neo4j, metadata=audiobook_metadata, path=queue_item.url
+                )
+            else:
+                logger.warning("Parsing of audiobook data failed.")
+    time.sleep(30)
+
+
 def main(argv: list[str]) -> None:
     """Main entrypoint."""
     del argv
 
-    queue: LifoQueue[QueueItem] = LifoQueue()
     neo4j = get_driver()
+    redis = Redis(
+        host=_REDIS_HOST.value, port=_REDIS_PORT.value, password=_REDIS_PASSOWRD.value
+    )
+    p = redis.pubsub()
     llm = get_base_llm()
     parse_new_entries_page_llm = llm.with_structured_output(
         NewSubmissionList, include_raw=True
     )
+
     parse_book_page_llm = llm.with_structured_output(
         AudioBookMetadata, include_raw=True
     )
+    _handler = partial(
+        handler,
+        redis=redis,
+        topic_name="queue-channel",
+        parse_new_entries_page_llm=parse_new_entries_page_llm,
+        parse_book_page_llm=parse_book_page_llm,
+        neo4j=neo4j,
+    )
+    p.subscribe(**{"queue-channel": _handler})
 
     url_template = f"{_BASE_URL.value}/member/index?pid="
 
     for page in range(_PAGE_END.value, _PAGE_START.value - 1, -1):
         actual_url = f"{url_template}{page}"
-        queue.put(
+        redis.publish(
+            "queue-channel",
             QueueItem(
                 queue_item_type=QueueItemType.PAGE_WITH_NEW_ENTRIES, url=actual_url
-            )
+            ).model_dump_json(),
         )
     logger.info("Finished adding main pages to queue.")
-
-    while not queue.empty():
-        logger.info(f"Getting item from queue. Queue size: {queue.qsize()}")
-        queue_item = queue.get()
-        match queue_item.queue_item_type:
-            case QueueItemType.PAGE_WITH_NEW_ENTRIES:
-                logger.info(f"Parsing page with new entries. URL = {queue_item.url}")
-                submission_list: NewSubmissionList | None = retrieve_and_parse_page(
-                    url=queue_item.url,
-                    llm=parse_new_entries_page_llm,
-                    filtering_fn=extract_only_new_submissions_table,
-                )
-                if submission_list is None:
-                    raise RuntimeError()
-                for submission in submission_list.submissions:
-                    queue.put(
-                        QueueItem(
-                            queue_item_type=QueueItemType.PAGE_WITH_AUDIOBOOK_METADATA,
-                            url=submission.url,
-                        )
-                    )
-            case QueueItemType.PAGE_WITH_AUDIOBOOK_METADATA:
-                complete_url = merge_url_parts(_BASE_URL.value, queue_item.url)
-                logger.info(
-                    f"Parsing page with audiobook metadata. PATH = {complete_url}"
-                )
-                audiobook_metadata = retrieve_and_parse_page(
-                    url=complete_url,
-                    llm=parse_book_page_llm,
-                    filtering_fn=extract_only_post_info,
-                )
-                if audiobook_metadata:
-                    store_audiobook_in_neo4j(
-                        driver=neo4j, metadata=audiobook_metadata, path=queue_item.url
-                    )
-                else:
-                    logger.warning("Parsing of audiobook data failed.")
+    while True:
+        p.get_message()
         time.sleep(30)
-
-    while not queue.empty():
-        pprint(queue.get())
 
 
 def _main() -> None:

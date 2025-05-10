@@ -10,6 +10,13 @@ variable "neo4j_password" {
   default     = "password"
 }
 
+
+variable "redis_password" {
+  type        = string
+  description = "Redis password. If empty, a random one will be generated."
+  default     = "password"
+}
+
 variable "postgres_docker_image_data" {
   type = object({
     image_name = string
@@ -31,5 +38,18 @@ variable "neo4j_docker_image_data" {
   default = {
     image_name = "neo4j"
     tag        = "2025.02.0"
+  }
+}
+
+
+variable "redis_docker_image_data" {
+  type = object({
+    image_name = string
+    tag        = string
+  })
+  description = "Object with the information about the redis docker image."
+  default = {
+    image_name = "redis"
+    tag        = "8-alpine"
   }
 }
