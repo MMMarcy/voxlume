@@ -33,17 +33,21 @@ pub fn HomePage() -> impl IntoView {
         }
     });
     view! {
-        <Show
-            when=audiobooks_loaded
-            fallback=move|| view! {"loading"} >
-            // TODO: audiobook should have a key that is Copy
-            <For
-                each=move || audiobooks.get().unwrap()
-                key=|v| v.0.path.clone()
-                let(audiobook_with_data)
-            >
-               <AudioBookComponentBox audiobook_with_data=audiobook_with_data />
-            </For>
-        </Show>
+        <div class="container">
+            <div class="grid is-col-min-12">
+                <Show
+                    when=audiobooks_loaded
+                    fallback=move|| view! {"loading"} >
+                    // TODO: audiobook should have a key that is Copy
+                    <For
+                        each=move || audiobooks.get().unwrap()
+                        key=|v| v.0.path.clone()
+                        let(audiobook_with_data)
+                    >
+                    <AudioBookComponentBox audiobook_with_data=audiobook_with_data />
+                    </For>
+                </Show>
+            </div>
+        </div>
     }
 }

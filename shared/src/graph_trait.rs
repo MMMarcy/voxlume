@@ -19,24 +19,33 @@ impl From<Neo4rsError> for AppError {
 pub async fn get_most_recent_audiobooks_with_data(
     graph: &Graph,
 ) -> Result<Vec<AudiobookWithData>, AppError> {
-    let cypher_query_str = "
+    let get_audiobook_with_connections_query = query(
+        "
         MATCH (ab:Audiobook)
         WITH ab
         ORDER BY ab.last_upload DESC
-        LIMIT 10
-        OPTIONAL MATCH (ab)-[:WRITTEN_BY]->(author:Author)
-        WITH ab, collect(DISTINCT author) AS authors
-        OPTIONAL MATCH (ab)-[:CATEGORIZED_AS]->(category:Category)
-        WITH ab, authors, collect(DISTINCT category) AS categories
-        OPTIONAL MATCH (ab)-[:HAS_KEYWORD]->(keyword:Keyword)
-        WITH ab, authors, categories, collect(DISTINCT keyword) AS keywords
-        OPTIONAL MATCH (ab)-[:READ_BY]->(reader:Reader)
-        WITH ab, authors, categories, keywords, collect(DISTINCT reader) AS readers
-        OPTIONAL MATCH (ab)-[:PART_OF_SERIES]->(series:Series)
-        RETURN ab AS audiobook, authors, categories, keywords, readers, series
-    ";
+        LIMIT $limit
 
-    let mut result_stream = graph.execute(query(cypher_query_str)).await?;
+        OPTIONAL MATCH (ab)-[:WRITTEN_BY]->(author:Author)
+        WITH ab, collect(author) AS authors
+
+        OPTIONAL MATCH (ab)-[:CATEGORIZED_AS]->(category:Category)
+        WITH ab, authors, collect(category) AS categories
+
+        OPTIONAL MATCH (ab)-[:HAS_KEYWORD]->(keyword:Keyword)
+        WITH ab, authors, categories, collect(keyword) AS keywords
+
+        OPTIONAL MATCH (ab)-[:READ_BY]->(reader:Reader)
+        WITH ab, authors, categories, keywords, collect(reader) AS readers
+
+        OPTIONAL MATCH (ab)-[:PART_OF_SERIES]->(series:Series)
+
+        RETURN ab AS audiobook, authors, categories, keywords, readers, series
+    ",
+    )
+    .param("limit", 10);
+
+    let mut result_stream = graph.execute(get_audiobook_with_connections_query).await?;
     let mut audiobooks_data: Vec<AudiobookWithData> = Vec::new();
 
     while let Ok(maybe_row) = result_stream.next().await {

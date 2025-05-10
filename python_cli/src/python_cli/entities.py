@@ -63,7 +63,9 @@ class AudioBookMetadata(BaseModel):
         description="Whether or not this book is unabriged.", default=False
     )
 
-    description: str = Field(description="The description of this audiobook.")
+    description: str = Field(description="The HTML representation of the description of this audiobook.")
+
+    very_short_description: str = Field(description="A very short summary of the description of this audiobook. 100 words max")
 
     file_size: str | None = Field(
         description="The file size if available", default=None
