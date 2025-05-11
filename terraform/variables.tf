@@ -11,9 +11,9 @@ variable "neo4j_password" {
 }
 
 
-variable "redis_password" {
+variable "pgmq_password" {
   type        = string
-  description = "Redis password. If empty, a random one will be generated."
+  description = "pgmq password. If empty, a random one will be generated."
   default     = "password"
 }
 
@@ -42,14 +42,14 @@ variable "neo4j_docker_image_data" {
 }
 
 
-variable "redis_docker_image_data" {
+variable "pgmq_docker_image_data" {
   type = object({
     image_name = string
     tag        = string
   })
-  description = "Object with the information about the redis docker image."
+  description = "Object with the information about the pgmq docker image."
   default = {
-    image_name = "redis"
-    tag        = "8-alpine"
+    image_name = "ghcr.io/pgmq/pg17-pgmq"
+    tag        = "v1.5.1"
   }
 }
