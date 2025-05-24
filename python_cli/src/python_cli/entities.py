@@ -63,9 +63,9 @@ class AudioBookMetadata(BaseModel):
         description="Whether or not this book is unabriged.", default=False
     )
 
-    description: str = Field(description="The HTML representation of the description of this audiobook.")
-
-    very_short_description: str = Field(description="A very short summary of the description of this audiobook. 100 words max")
+    description: str = Field(
+        description="The HTML representation of the description of this audiobook."
+    )
 
     file_size: str | None = Field(
         description="The file size if available", default=None
@@ -88,6 +88,22 @@ class AudioBookMetadata(BaseModel):
             "Only populated if the series is present"
         ),
         default=None,
+    )
+
+
+class AudioBookMetadataWithAugmentations(AudioBookMetadata):
+    """Model that basically is the metadata + the genAI augmentations."""
+
+    very_short_description: str = Field(
+        description="Extremely short description to display on the overview."
+    )
+
+    description_for_embeddings: str = Field(
+        description="A description that is used solely for retrieval."
+    )
+
+    salient_words: str = Field(
+        description="Words to use for the BM25 part of the search."
     )
 
 

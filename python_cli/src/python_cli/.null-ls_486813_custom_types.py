@@ -7,9 +7,6 @@ from enum import Enum
 from pathlib import Path
 from typing import LiteralString, NewType
 
-from google.adk.agents import BaseAgent
-from sqlalchemy.ext.asyncio import AsyncEngine
-
 
 class _YesNoEnum(Enum):
     NO = 0
@@ -21,11 +18,8 @@ ConfigurationPath = NewType("ConfigurationPath", Path)
 # Databases section.
 Neo4JMigrationQuery = NewType("Neo4JMigrationQuery", LiteralString)
 ShouldRunNeo4JMigration = NewType("ShouldRunNeo4JMigration", _YesNoEnum)
-ParadeEngine = NewType("ParadeEngine", AsyncEngine)
+
 
 # Agent section
-AgentName = NewType("AgentName", str)
-AppName = NewType("AppName", str)
-GeminiModelVersion = NewType("GeminiModelVersion", str)
-ParseAudiobookPageAgent = NewType("ParseAudiobookPageAgent", BaseAgent)
-ParseNewPublicationsPageAgent = NewType("ParseNewPublicationsPageAgent", BaseAgent)
+GeminiModelVersion = NewType("GeminiModelVersion", Li
+

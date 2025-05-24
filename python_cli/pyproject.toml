@@ -8,7 +8,7 @@ requires-python = ">=3.12"
 dependencies = [
     "absl-py>=2.1.0",
     "beautifulsoup4>=4.13.3",
-    "google-adk>=0.5.0",
+    "google-adk>=1.0.0",
     "injector>=0.22.0",
     "json5>=0.12.0",
     "langchain>=0.3.21",
@@ -19,12 +19,13 @@ dependencies = [
     "random-user-agent>=1.0.1",
     "requests>=2.32.3",
     "rich>=13.9.4",
+    "sqlalchemy[asyncio,mypy,postgresql-psycopg]>=2.0.41",
     "tembo-pgmq-python[async]>=0.10.0",
     "types-requests>=2.32.0.20250306",
 ]
 
 [project.scripts]
-python-cli = "python_cli:_main"
+python-cli = "python_cli:main._main"
 
 [build-system]
 requires = ["hatchling"]
