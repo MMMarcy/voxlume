@@ -1,10 +1,11 @@
 """Contains the neo4j stuff."""
 
 from textwrap import dedent
+
 import neo4j
 from loguru import logger
 
-from python_cli.entities import AudioBookMetadata
+from python_cli.entities import AudioBookMetadataWithAugmentations
 
 _PATH_PROPERTY_NAME = "path"
 
@@ -34,7 +35,7 @@ def _save_author_and_get_id(
 
 
 def _create_audiobook_and_relations_tx(
-    tx: neo4j.Transaction, metadata: AudioBookMetadata, path: str
+    tx: neo4j.Transaction, metadata: AudioBookMetadataWithAugmentations, path: str
 ) -> None:
     """Insert the audiobook metadata.
 
@@ -88,7 +89,7 @@ def _create_audiobook_and_relations_tx(
     MERGE (ab)-[:READ_BY]->(reader)
     """
     for reader in metadata.read_by:
-        tx.run(query_attach_reader, audiobook_id=audiobook_id, reader_name=reader)
+        _ = tx.run(query_attach_reader, audiobook_id=audiobook_id, reader_name=reader)
 
     query_attach_category = """
     MATCH (ab:Audiobook) WHERE elementId(ab) = $audiobook_id
@@ -96,7 +97,7 @@ def _create_audiobook_and_relations_tx(
     MERGE (ab)-[:CATEGORIZED_AS]->(category)
     """
     for cat in metadata.categories:
-        tx.run(query_attach_category, audiobook_id=audiobook_id, category_name=cat)
+        _ = tx.run(query_attach_category, audiobook_id=audiobook_id, category_name=cat)
 
     query_attach_keyword = """
     MATCH (ab:Audiobook) WHERE elementId(ab) = $audiobook_id
@@ -104,7 +105,7 @@ def _create_audiobook_and_relations_tx(
     MERGE (ab)-[:HAS_KEYWORD]->(kw)
     """
     for kw in metadata.keywords:
-        tx.run(query_attach_keyword, audiobook_id=audiobook_id, keyword=kw)
+        _ = tx.run(query_attach_keyword, audiobook_id=audiobook_id, keyword=kw)
 
     author_ids = [
         _save_author_and_get_id(tx, name, audiobook_id) for name in metadata.authors
@@ -141,7 +142,7 @@ def _create_audiobook_and_relations_tx(
         MERGE (series)-[:WRITTEN_BY_SERIES]->(author)
         """
         for author_id in author_ids:
-            tx.run(
+            _ = tx.run(
                 query_series,
                 author_id=author_id,
                 series_id=series_id,
@@ -154,7 +155,7 @@ def _create_audiobook_and_relations_tx(
 
 
 def store_audiobook_in_neo4j(
-    driver: neo4j.Driver, metadata: AudioBookMetadata, path: str
+    driver: neo4j.Driver, metadata: AudioBookMetadataWithAugmentations, path: str
 ) -> None:
     """Stores audiobook metadata in Neo4j using a managed transaction.
 

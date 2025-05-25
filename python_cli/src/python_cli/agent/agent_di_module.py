@@ -15,10 +15,12 @@ from python_cli.agent.agent import ToplevelAgent
 from python_cli.custom_types import (
     AppName,
     CreateSessionFn,
+    DescriptionForEmbeddingsAgent,
     GeminiModelVersion,
     ParseAudiobookPageAgent,
     ParseNewPublicationsPageAgent,
     StrcturedResponseKey,
+    VeryShortDescriptionAgent,
 )
 from python_cli.entities import AudioBookMetadata, NewSubmissionList
 
@@ -76,6 +78,55 @@ class AgentDIModule(Module):
 
     @provider
     @singleton
+    def _provide_llm_for_short_description(
+        self,
+        model_version: GeminiModelVersion,
+        structured_response_key: StrcturedResponseKey,
+    ) -> VeryShortDescriptionAgent:
+        return VeryShortDescriptionAgent(
+            LlmAgent(
+                name="very_short_description_agent",
+                model=model_version,
+                instruction=dedent("""
+                Your job is to extract summarize the provided description in
+                a very few words. A couple of sentences as max.
+
+                The descirption is about the content of an audiobook so your
+                summary must be captivating and in the same language as the
+                description.
+
+                Here is the description:
+                {description}
+                """),
+                output_key=structured_response_key,
+            )
+        )
+
+    @provider
+    @singleton
+    def _provide_llm_for_embeddable_description(
+        self,
+        model_version: GeminiModelVersion,
+        structured_response_key: StrcturedResponseKey,
+    ) -> DescriptionForEmbeddingsAgent:
+        return DescriptionForEmbeddingsAgent(
+            LlmAgent(
+                name="description_for_embedding_agent",
+                model=model_version,
+                instruction=dedent("""
+                Your job is to rephrase the provided description in a way that the
+                embeddings that will be generated from it will be easily findable from
+                generic queries.
+
+                Here is the description:
+                {description}
+                """),
+                output_key=structured_response_key,
+            )
+        )
+
+    @provider
+    @singleton
     def _provide_adk_runner(
         self,
         agent: ToplevelAgent,
@@ -116,8 +167,9 @@ class AgentDIModule(Module):
                 app_name=app_name, user_id=user_id, session_id=session_id
             )
             if maybe_session:
-                logger.info("returning existing session.")
-                return maybe_session
+                await session_service.delete_session(
+                    app_name=app_name, user_id=user_id, session_id=session_id
+                )
             logger.info("Creating new session.")
             return await session_service.create_session(
                 app_name=app_name,

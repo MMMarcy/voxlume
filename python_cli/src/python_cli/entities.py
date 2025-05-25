@@ -102,10 +102,6 @@ class AudioBookMetadataWithAugmentations(AudioBookMetadata):
         description="A description that is used solely for retrieval."
     )
 
-    salient_words: str = Field(
-        description="Words to use for the BM25 part of the search."
-    )
-
 
 class QueueItemType(Enum):
     """The type of item in the queue."""

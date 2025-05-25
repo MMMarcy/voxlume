@@ -40,5 +40,7 @@ AppName = NewType("AppName", str)
 GeminiModelVersion = NewType("GeminiModelVersion", str)
 ParseAudiobookPageAgent = NewType("ParseAudiobookPageAgent", BaseAgent)  # type: ignore
 ParseNewPublicationsPageAgent = NewType("ParseNewPublicationsPageAgent", BaseAgent)  # type: ignore
+VeryShortDescriptionAgent = NewType("VeryShortDescriptionAgent", BaseAgent)  # type: ignore
+DescriptionForEmbeddingsAgent = NewType("DescriptionForEmbeddingsAgent", BaseAgent)  # type: ignore
 StrcturedResponseKey = NewType("StrcturedResponseKey", str)
 CreateSessionFn = Callable[[str, str, str], Coroutine[None, None, Session]]

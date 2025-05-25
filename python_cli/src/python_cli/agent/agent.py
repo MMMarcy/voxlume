@@ -8,18 +8,26 @@ from google.adk.runners import AsyncGenerator, InvocationContext
 from injector import inject
 from loguru import logger
 from neo4j import Driver
-from result import Ok, Result
+from result import Err, Ok, Result
 from tembo_pgmq_python.async_queue import PGMQueue
 
 from python_cli.custom_types import (
     AudiobookBayURL,
+    DescriptionForEmbeddingsAgent,
     ParseAudiobookPageAgent,
     ParseNewPublicationsPageAgent,
     QueueName,
     StrcturedResponseKey,
+    VeryShortDescriptionAgent,
 )
-from python_cli.db.neo4j import does_audiobook_already_exists
-from python_cli.entities import NewSubmissionList, QueueItem, QueueItemType
+from python_cli.db.neo4j import does_audiobook_already_exists, store_audiobook_in_neo4j
+from python_cli.entities import (
+    AudioBookMetadata,
+    AudioBookMetadataWithAugmentations,
+    NewSubmissionList,
+    QueueItem,
+    QueueItemType,
+)
 from python_cli.utils.agent_state import add_content_to_agent_state
 from python_cli.utils.html import (
     extract_only_new_submissions_table,
@@ -49,6 +57,8 @@ class ToplevelAgent(BaseAgent):
         structured_response_key: StrcturedResponseKey,
         audiobookbay_url: AudiobookBayURL,
         driver: Driver,
+        short_description_agent: VeryShortDescriptionAgent,
+        embeddable_description_agent: DescriptionForEmbeddingsAgent,
     ) -> None:
         """Init."""
         super().__init__(name="top_level_agent")
@@ -61,6 +71,12 @@ class ToplevelAgent(BaseAgent):
         self._structured_response_key: StrcturedResponseKey = structured_response_key
         self._audiobookbay_url: AudiobookBayURL = audiobookbay_url
         self._driver: Driver = driver
+        self._short_description_agent: VeryShortDescriptionAgent = (
+            short_description_agent
+        )
+        self._embeddable_description_agent: DescriptionForEmbeddingsAgent = (
+            embeddable_description_agent
+        )
 
     async def _handle_new_entries_page(
         self,
@@ -109,9 +125,44 @@ class ToplevelAgent(BaseAgent):
             target_key="html",
             content=body,
         )
-        async for event in self._new_publication_page_agent.run_async(ctx):
+        md: AudioBookMetadata | None = None
+        async for event in self._audiobook_page_agent.run_async(ctx):
             if event.is_final_response() and event.content and event.content.parts:
                 logger.info("Analyzing audiobook page.")
+                text_content = event.content.parts[0].text
+                md = AudioBookMetadata.model_validate_json(text_content)
+        if not md:
+            return Err("Couldn't get the metadata.")
+
+        _ = await add_content_to_agent_state(
+            session_service=ctx.session_service,
+            session=ctx.session,
+            target_key="description",
+            content=md.description,
+        )
+
+        very_short_description: str | None = None
+        async for event in self._short_description_agent.run_async(ctx):
+            if event.is_final_response() and event.content and event.content.parts:
+                very_short_description = event.content.parts[0].text
+        logger.info("Very short description: {}", very_short_description)
+
+        embeddable_description: str | None = None
+        async for event in self._embeddable_description_agent.run_async(ctx):
+            if event.is_final_response() and event.content and event.content.parts:
+                embeddable_description = event.content.parts[0].text
+        logger.info("Embeddable description: {}", embeddable_description)
+
+        augmentd_md: AudioBookMetadataWithAugmentations = (
+            AudioBookMetadataWithAugmentations.model_validate(
+                {
+                    **md.model_dump(),
+                    "very_short_description": very_short_description,
+                    "description_for_embeddings": embeddable_description,
+                }
+            )
+        )
+        store_audiobook_in_neo4j(self._driver, metadata=augmentd_md, path=url)
         return Ok(None)
 
     @override
@@ -133,7 +184,8 @@ class ToplevelAgent(BaseAgent):
                 logger.info(res)
             case QueueItemType.PAGE_WITH_AUDIOBOOK_METADATA:
                 if does_audiobook_already_exists(self._driver, queue_item.url):
-                    logger.info("Audiobook already ingested")
+                    logger.debug("Audiobook already ingested")
                 else:
                     logger.info("New audiobook")
+                    _ = await self._handle_audiobook_page(ctx, queue_item)
         yield Event(author=self.name)

@@ -111,22 +111,27 @@ async def _main_impl() -> None:
 
     pgmq = injector.get(PGMQueue)
     await pgmq.init()
-    _ = await pgmq.drop_queue(queue_name)
     await pgmq.create_queue(queue_name)
     runner = injector.get(Runner)
     app_name = injector.get(AppName)
     create_session_fn: CreateSessionFn = cast(
         "CreateSessionFn", injector.get(CreateSessionFn)
     )
-    url = f"{_BASE_URL.value}/member/index?pid=1"
-    session: Session = await create_session_fn("loop", "test_session", app_name)
-    item = QueueItem(queue_item_type=QueueItemType.PAGE_WITH_NEW_ENTRIES, url=url)
-    _ = await pgmq.send(queue_name, message={"data": item.model_dump_json()})
+    url = f"{_BASE_URL.value}/member/index?pid="
+    if _IS_BACKFILL_JOB.value == IsBackfillJob.NO:
+        urls = [f"{url}1"]
+    else:
+        urls = [f"{url}{idx}" for idx in range(1, 50, 1)]
+
+    for url in urls:
+        item = QueueItem(queue_item_type=QueueItemType.PAGE_WITH_NEW_ENTRIES, url=url)
+        _ = await pgmq.send(queue_name, message={"data": item.model_dump_json()})
 
     while msg := await pgmq.pop(queue_name):
         if msg is None:
             break
 
+        session: Session = await create_session_fn("loop", "test_session", app_name)
         message_content: dict[str, str] = msg.message
 
         content = types.Content(
@@ -138,6 +143,9 @@ async def _main_impl() -> None:
         ):
             if event.is_final_response():
                 logger.info(event)
+
+        # Throttle.
+        await asyncio.sleep(30)
 
 
 def main(argv: list[str]) -> None:

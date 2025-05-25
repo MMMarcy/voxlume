@@ -23,6 +23,7 @@ dependencies = [
     "sqlalchemy[asyncio,mypy,postgresql-psycopg]>=2.0.41",
     "tembo-pgmq-python[async]>=0.10.0",
     "types-requests>=2.32.0.20250306",
+    "uuid7>=0.1.0",
 ]
 
 [project.scripts]
