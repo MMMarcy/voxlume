@@ -18,6 +18,7 @@ dependencies = [
     "pydantic>=2.10.6",
     "random-user-agent>=1.0.1",
     "requests>=2.32.3",
+    "result>=0.17.0",
     "rich>=13.9.4",
     "sqlalchemy[asyncio,mypy,postgresql-psycopg]>=2.0.41",
     "tembo-pgmq-python[async]>=0.10.0",
@@ -243,5 +244,7 @@ ignore = ["src/oldstuff"]
 
 reportMissingImports = true
 reportMissingTypeStubs = false
+reportUnknownMemberType = false
+reportArgumentType = false
 reportAny = false
 pythonVersion = "3.12"
