@@ -39,7 +39,7 @@ class Neo4JConfiguriation(BaseModel):
 
     neo4j_username: str = Field(default="neo4j")
     neo4j_password: str = Field(default="password")
-    neo4j_host: str = Field(default="neo4j://localhost")
+    neo4j_host: str = Field(default="localhost")
     neo4j_port: int = Field(default=7687)
 
 
@@ -104,3 +104,10 @@ class ConfigurationModule(Module):
     @singleton
     def _provide_pgmq_config(self, conf: ConfigurationModel) -> PGMQConfiguration:
         return conf.pgmq_configuration
+
+    @provider
+    @singleton
+    def _provide_neo4j_configuration(
+        self, conf: ConfigurationModel
+    ) -> Neo4JConfiguriation:
+        return conf.neo4j_configuration

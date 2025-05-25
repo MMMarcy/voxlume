@@ -2,29 +2,26 @@
 
 import asyncio
 from pathlib import Path
-import sys
 from textwrap import dedent
-from typing import Generic, cast
+from typing import cast
 
 from absl import app, flags
-from google.adk.runners import BaseSessionService, Runner, Session
+from google.adk.runners import Runner, Session
 from google.genai import types
 from injector import Binder, Injector, SingletonScope
 from loguru import logger
-from sqlalchemy import text
 from tembo_pgmq_python.async_queue import PGMQueue
 
-from python_cli.agent.agent import ToplevelAgent
 from python_cli.agent.agent_di_module import AgentDIModule
-from python_cli.configuration import ConfigurationModel, ConfigurationModule
+from python_cli.configuration import ConfigurationModule
 from python_cli.custom_types import (
     AgentName,
     AppName,
+    AudiobookBayURL,
     ConfigurationPath,
     CreateSessionFn,
     GeminiModelVersion,
     IsBackfillJob,
-    ParadeEngine,
     QueueName,
 )
 from python_cli.db.db_di_module import DBModule
@@ -92,6 +89,9 @@ def _bind_flags(binder: Binder) -> None:
     binder.bind(AppName, to=AppName(_APP_NAME.value), scope=SingletonScope)
     binder.bind(AgentName, to=AgentName(_AGENT_NAME.value), scope=SingletonScope)
     binder.bind(QueueName, to=QueueName(_QUEUE_NAME.value), scope=SingletonScope)
+    binder.bind(
+        AudiobookBayURL, to=AudiobookBayURL(_BASE_URL.value), scope=SingletonScope
+    )
 
 
 async def _main_impl() -> None:
@@ -111,7 +111,7 @@ async def _main_impl() -> None:
 
     pgmq = injector.get(PGMQueue)
     await pgmq.init()
-    await pgmq.drop_queue(queue_name)
+    _ = await pgmq.drop_queue(queue_name)
     await pgmq.create_queue(queue_name)
     runner = injector.get(Runner)
     app_name = injector.get(AppName)
@@ -126,13 +126,18 @@ async def _main_impl() -> None:
     while msg := await pgmq.pop(queue_name):
         if msg is None:
             break
+
+        message_content: dict[str, str] = msg.message
+
         content = types.Content(
-            role="user", parts=[types.Part(text=msg.message["data"])]
+            role="user", parts=[types.Part(text=message_content["data"])]
         )
+
         async for event in runner.run_async(
             user_id=session.user_id, session_id=session.id, new_message=content
         ):
-            logger.info("{} - {}", event.author, event.is_final_response())
+            if event.is_final_response():
+                logger.info(event)
 
 
 def main(argv: list[str]) -> None:

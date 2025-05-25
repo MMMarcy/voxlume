@@ -26,6 +26,7 @@ class IsBackfillJob(StrEnum):
 
 
 ConfigurationPath = NewType("ConfigurationPath", Path)
+AudiobookBayURL = NewType("AudiobookBayURL", str)
 
 # Databases section.
 Neo4JMigrationQuery = NewType("Neo4JMigrationQuery", LiteralString)

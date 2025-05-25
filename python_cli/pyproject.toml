@@ -241,7 +241,7 @@ exclude = [
     ".venv/",
 ]
 ignore = ["src/oldstuff"]
-
+typeCheckingMode = "recommended"
 reportMissingImports = true
 reportMissingTypeStubs = false
 reportUnknownMemberType = false

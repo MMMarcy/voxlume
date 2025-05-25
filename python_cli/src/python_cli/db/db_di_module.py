@@ -31,16 +31,14 @@ class DBModule(Module):
         self,
         neo4j_config: Neo4JConfiguriation,
         migration_queries: list[Neo4JMigrationQuery],
-        should_run_migrations: ShouldRunNeo4JMigration,
     ) -> Driver:
         driver = GraphDatabase.driver(
             uri=f"neo4j://{neo4j_config.neo4j_host}:{neo4j_config.neo4j_port}",
             auth=(neo4j_config.neo4j_username, neo4j_config.neo4j_password),
         )
         driver.verify_connectivity()
-        if should_run_migrations == ShouldRunNeo4JMigration.YES:
-            for migration_query in migration_queries:
-                _ = driver.execute_query(query_=migration_query)
+        for migration_query in migration_queries:
+            _ = driver.execute_query(query_=migration_query)
         return driver
 
     @provider

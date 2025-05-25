@@ -37,7 +37,7 @@ class AgentDIModule(Module):
             LlmAgent(
                 name="parse_publication_page_agent",
                 model=model_version,
-                disallow_transfer_to_parent=False,
+                disallow_transfer_to_parent=True,
                 disallow_transfer_to_peers=True,
                 instruction=dedent("""
                 You extract information about new audiobook releases

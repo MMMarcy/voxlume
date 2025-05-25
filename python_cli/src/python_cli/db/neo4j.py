@@ -1,5 +1,6 @@
 """Contains the neo4j stuff."""
 
+from textwrap import dedent
 import neo4j
 from loguru import logger
 
@@ -165,7 +166,7 @@ def store_audiobook_in_neo4j(
     try:
         with driver.session() as session:
             session.execute_write(
-                _create_audiobook_and_relations_tx,  # type: ignore
+                _create_audiobook_and_relations_tx,
                 metadata=metadata,
                 path=path,
             )
@@ -184,3 +185,15 @@ def store_audiobook_in_neo4j(
         )
         # Handle other potential errors during the transaction
         raise  # Re-raise the exception if calling code needs to know
+
+
+def does_audiobook_already_exists(driver: neo4j.Neo4jDriver, path: str) -> bool:
+    """Check if an audiobook has already been ingested."""
+    res, _, _ = driver.execute_query(
+        query_=dedent("""
+        RETURN EXISTS {
+            MATCH (:Audiobook {path: $path})
+        } AS pathExists"""),
+        path=path,
+    )
+    return res[0]["pathExists"]
