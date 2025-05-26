@@ -15,7 +15,9 @@ pub struct AudioBook {
 
     pub description: String,
 
-    pub very_short_description: Option<String>,
+    pub very_short_description: String,
+
+    pub description_for_embeddings: String,
 
     pub file_size: Option<String>,
 

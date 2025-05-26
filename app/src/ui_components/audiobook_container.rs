@@ -12,18 +12,8 @@ pub fn AudioBookComponentBox(audiobook_with_data: AudiobookWithData) -> impl Int
     let title = audiobook.title;
     let author = authors[0].name.clone();
     let cover_url = audiobook.cover_url;
-    let description = audiobook.description;
-    let very_short_description = match audiobook.very_short_description.clone() {
-        Some(desc) => desc,
-        None => String::new(),
-    };
-    let description_to_display = move || {
-        if very_short_description.is_empty() {
-            very_short_description.clone()
-        } else {
-            description.clone()
-        }
-    };
+    // let description = audiobook.description;
+    let very_short_description = audiobook.very_short_description;
 
     // let audiobook = Arc::new(audiobook);
     debug_warn!("Test update");
@@ -47,7 +37,7 @@ pub fn AudioBookComponentBox(audiobook_with_data: AudiobookWithData) -> impl Int
             </div>
 
             <div class="content">
-               { description_to_display }
+               { very_short_description }
             <br />
             <time datetime="2016-1-1">11:09 PM - 1 Jan 2016</time>
             </div>
