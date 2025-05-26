@@ -153,6 +153,11 @@ class ToplevelAgent(BaseAgent):
                 embeddable_description = event.content.parts[0].text
         logger.info("Embeddable description: {}", embeddable_description)
 
+        if not very_short_description or not embeddable_description:
+            return Err(
+                "Couldn't create very short description or embeddable description."
+            )
+
         augmentd_md: AudioBookMetadataWithAugmentations = (
             AudioBookMetadataWithAugmentations.model_validate(
                 {
@@ -178,9 +183,11 @@ class ToplevelAgent(BaseAgent):
             raise RuntimeError()
         raw_msg = ctx.user_content.parts[0].text
         queue_item = QueueItem.model_validate_json(raw_msg)
+        made_http_request = False
         match queue_item.queue_item_type:
             case QueueItemType.PAGE_WITH_NEW_ENTRIES:
                 res = await self._handle_new_entries_page(ctx, queue_item)
+                made_http_request = True
                 logger.info(res)
             case QueueItemType.PAGE_WITH_AUDIOBOOK_METADATA:
                 if does_audiobook_already_exists(self._driver, queue_item.url):
@@ -188,4 +195,7 @@ class ToplevelAgent(BaseAgent):
                 else:
                     logger.info("New audiobook")
                     _ = await self._handle_audiobook_page(ctx, queue_item)
-        yield Event(author=self.name)
+                    made_http_request = True
+        yield Event(
+            author=self.name, custom_metadata={"made_http_request": made_http_request}
+        )

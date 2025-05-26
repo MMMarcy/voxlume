@@ -138,14 +138,19 @@ async def _main_impl() -> None:
             role="user", parts=[types.Part(text=message_content["data"])]
         )
 
+        made_http_request = True
         async for event in runner.run_async(
             user_id=session.user_id, session_id=session.id, new_message=content
         ):
-            if event.is_final_response():
-                logger.info(event)
-
+            if (
+                event.is_final_response()
+                and event.custom_metadata
+                and "made_http_request" in event.custom_metadata
+            ):
+                made_http_request = event.custom_metadata["made_http_request"]
         # Throttle.
-        await asyncio.sleep(30)
+        if made_http_request:
+            await asyncio.sleep(30)
 
 
 def main(argv: list[str]) -> None:
