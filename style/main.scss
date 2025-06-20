@@ -17,3 +17,51 @@ a.navbar-item[aria-current]:not([aria-current="false"]) {
     $navbar-item-selected-background-l
   );
 }
+
+.card {
+  box-shadow: 0 0;
+  --bulma-card-radius: 0;
+  border: 1px solid $primary;
+  padding: 1px;
+}
+
+/* Ensure your Bulma columns are set up correctly */
+.columns {
+  display: flex;
+}
+
+.overlow_x_visible {
+  overflow-x: scroll;
+}
+
+/* Apply flex properties to the card itself */
+.card.is-equal-height-card {
+  height: 100%;
+  /* Make the card take full height of its column parent */
+  display: flex;
+  flex-direction: column;
+  /* Arrange card content vertically */
+}
+
+/* Optional: If you have a card-footer and want it always at the bottom */
+.card.is-equal-height-card .card-footer {
+  margin-top: auto;
+  /* Pushes the footer to the bottom */
+}
+
+/*
+   You might also need to adjust the image height if the 4by3 aspect ratio
+   is causing issues with differing content. You could set a max-height
+   or fixed height for the image container, but be mindful of aspect ratio distortion.
+*/
+.card.is-equal-height-card .card-image {
+  /* Example: If you want a fixed height for all images */
+  /* max-height: 200px; */
+  /* overflow: hidden; */
+}
+
+// TODO: Make this responsive
+.column.is-one-sixth {
+  flex: none;
+  width: 18%;
+}
