@@ -1,6 +1,6 @@
 use clap::{Parser, ValueEnum};
 
-#[derive(Clone, Debug, ValueEnum)]
+#[derive(Clone, Debug, ValueEnum, PartialEq)]
 pub enum Environment {
     DEV,
     PROD,

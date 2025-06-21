@@ -2,6 +2,8 @@
 
 pub mod args;
 
+use std::time::Duration;
+
 use app::{shell, App};
 use argon2::Argon2;
 use args::Environment;
@@ -11,7 +13,7 @@ use axum::{
     http::Request,
     response::IntoResponse,
     response::Response,
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use axum_session::{SessionConfig, SessionLayer, SessionStore};
@@ -20,6 +22,7 @@ use axum_session_sqlx::SessionPgPool;
 use clap::Parser;
 use leptos::prelude::*;
 use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRoutes};
+use moka::future::Cache;
 use neo4rs::ConfigBuilder;
 use neo4rs::Graph;
 use shared::state::AppState;
@@ -45,9 +48,6 @@ async fn server_fn_handler(
         move || {
             provide_context(auth_session.clone());
             provide_context(app_state.clone());
-            provide_context(app_state.graph.clone());
-            provide_context(app_state.password_handler.clone());
-            provide_context(app_state.database_connection_pool.clone());
         },
         request,
     )
@@ -61,17 +61,14 @@ async fn leptos_routes_handler(
 ) -> Response {
     let State(app_state) = state.clone();
 
-    let handler = leptos_axum::render_route_with_context(
-        app_state.routes.clone(),
+    let handler = leptos_axum::render_app_to_stream_with_context(
         move || {
             provide_context(auth_session.clone());
-            provide_context(app_state.database_connection_pool.clone());
-            provide_context(app_state.graph.clone());
-            provide_context(app_state.password_handler.clone());
+            provide_context(state.clone());
         },
         move || shell(app_state.leptos_options.clone()),
     );
-    handler(state, req).await.into_response()
+    handler(req).await.into_response()
 }
 
 async fn get_neo4j_connection(args: &Args) -> Graph {
@@ -145,19 +142,26 @@ async fn main() {
     .await
     .unwrap();
 
+    let cache_ttl: u64 = match args.environment {
+        Environment::DEV => 5,
+        Environment::PROD => 1800,
+    };
+    let cache = Cache::builder()
+        .max_capacity(100)
+        .time_to_live(Duration::from_secs(cache_ttl))
+        .build();
+
     let app_state = AppState {
         leptos_options,
         graph,
         database_connection_pool: pg_pool.clone(),
         routes: routes.clone(),
         password_handler: Argon2::default(),
+        cache: cache,
     };
     // Build our application with a route
     let binary = Router::new()
-        .route(
-            "/api/{*fn_name}",
-            get(server_fn_handler).post(server_fn_handler),
-        )
+        .route("/api/{*fn_name}", post(server_fn_handler))
         .leptos_routes_with_handler(routes, get(leptos_routes_handler))
         .fallback(leptos_axum::file_and_error_handler::<AppState, _>(shell))
         .layer(

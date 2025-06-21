@@ -1,4 +1,5 @@
 pub mod audiobook;
+pub mod audiobook_requests;
 pub mod author;
 pub mod category;
 pub mod enums;

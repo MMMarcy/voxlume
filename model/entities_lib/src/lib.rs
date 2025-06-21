@@ -4,6 +4,7 @@ pub mod error;
 pub use self::error::{Error, Result};
 
 pub use entities::audiobook::AudioBook;
+pub use entities::audiobook_requests::GetAudioBookRequestType;
 pub use entities::author::Author;
 pub use entities::category::Category;
 pub use entities::enums::Language;

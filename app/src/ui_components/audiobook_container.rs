@@ -2,29 +2,44 @@ use std::{rc::Rc, sync::Arc};
 
 use entities_lib::{
     entities::{audiobook, author},
-    AudioBook, AudiobookWithData, Author, Category, Keyword, Reader, Series,
+    AudioBook, AudiobookWithData, Author, Category, GetAudioBookRequestType, Keyword, Reader,
+    Series, User,
 };
-use leptos::{logging, prelude::*};
+use leptos::{logging, prelude::*, svg::switch};
 use leptos::{logging::debug_warn, prelude::*};
 use web_sys::TouchEvent;
 
 #[server(GetMostRecentAudiobooks, "/api")]
-async fn get_recent_audiobooks() -> Result<Vec<AudiobookWithData>, ServerFnError> {
-    use shared::graph_trait::get_most_recent_audiobooks_with_data;
+async fn get_audiobooks(
+    request_type: GetAudioBookRequestType,
+) -> Result<Vec<AudiobookWithData>, ServerFnError> {
+    use shared::auth_user::AuthSession;
+    use shared::graph_trait::get_audiobooks_cached;
     use shared::state::AppState;
     use tracing::info;
 
-    let graph = AppState::get_neo4j_conn()?;
-    get_most_recent_audiobooks_with_data(&graph)
+    info!("Before getting app state");
+    let state = AppState::get_app_state()?;
+    info!("Gotten app state");
+    let auth_session =
+        use_context::<AuthSession>().ok_or(ServerFnError::new("Couldn't find auth session"))?;
+    let user_id = auth_session.current_user.map_or_else(|| 1i64, |v| v.id);
+    info!("Gotten here.");
+    get_audiobooks_cached(state, user_id, request_type, 10, 0)
         .await
         .map_err(|e| ServerFnError::new(format!("{:?}", e)))
 }
 
 #[component]
-pub fn AudioBookCollectionContainer(title: String) -> impl IntoView {
+pub fn AudioBookCollectionContainer(
+    title: String,
+    request_type: GetAudioBookRequestType,
+) -> impl IntoView {
+    let _user_signal = use_context::<ReadSignal<User>>().unwrap();
+
     let audiobooks: RwSignal<Option<Vec<AudiobookWithData>>> = RwSignal::new(None);
     let audiobooks_loaded = move || audiobooks.get().is_some();
-    let get_audiobooks_op = OnceResource::new(get_recent_audiobooks());
+    let get_audiobooks_op = OnceResource::new(get_audiobooks(request_type));
     Effect::new(move || match get_audiobooks_op.get() {
         Some(Ok(data)) => {
             audiobooks.set(Some(data));
@@ -38,16 +53,18 @@ pub fn AudioBookCollectionContainer(title: String) -> impl IntoView {
     });
     let (is_hover, set_is_hover) = signal(false);
     let on_hover_handler = move |_| {
-        set_is_hover.update(|v| *v = !*v);
+        if !_user_signal().is_guest() {
+            set_is_hover.update(|v| *v = !*v);
+        }
     };
     let on_touch_hanlder = move |e: TouchEvent| {
-        // e.prevent_default();
         set_is_hover.update(|v| *v = !*v);
     };
     view! {
         <div class="container is-fluid" style="margin-top: 1rem">
+            <p class="title">{title}</p>
             <div
-                class="columns"
+                class="columns" class:is-multiline=move || _user_signal().is_guest()
                 class:overlow_x_visible=is_hover
                 on:mouseenter=on_hover_handler
                 on:mouseleave=on_hover_handler

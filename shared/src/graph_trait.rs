@@ -1,23 +1,52 @@
-use entities_lib::{AudioBook, AudiobookWithData, Author, Category, Keyword, Reader, Series, User};
+use entities_lib::{
+    AudioBook, AudiobookWithData, Author, Category, GetAudioBookRequestType, Keyword, Reader,
+    Series, User,
+};
 use neo4rs::{query, Error as Neo4rsError, Graph, Row}; // Make sure to import necessary items
 use serde::Deserialize; // Already shown above
 use tracing::{info, instrument, trace};
 
-#[derive(Debug)]
+use crate::state::AppState;
+
+#[derive(Debug, Clone)]
 pub enum AppError {
-    Neo4jError(Neo4rsError),
+    Neo4jError(String),
     DeserializationError(String), // Or use a more specific error type
 }
 
 impl From<Neo4rsError> for AppError {
     fn from(err: Neo4rsError) -> Self {
-        AppError::Neo4jError(err)
+        AppError::Neo4jError(err.to_string())
     }
 }
 
+#[instrument]
+pub async fn get_audiobooks_cached(
+    app_state: AppState,
+    user_id: i64,
+    request_type: GetAudioBookRequestType,
+    limit: u16,
+    page: u16,
+) -> Result<Vec<AudiobookWithData>, AppError> {
+    let cache = app_state.cache;
+    let cache_key = (user_id, request_type, limit, page);
+    let res = match request_type {
+        GetAudioBookRequestType::MostRecent => {
+            cache
+                .get_with(cache_key, async {
+                    get_most_recent_audiobooks_with_data(&app_state.graph, limit, page).await
+                })
+                .await
+        }
+    };
+    res
+}
+
 #[instrument(skip_all)]
-pub async fn get_most_recent_audiobooks_with_data(
+async fn get_most_recent_audiobooks_with_data(
     graph: &Graph,
+    limit: u16,
+    _page: u16,
 ) -> Result<Vec<AudiobookWithData>, AppError> {
     let get_audiobook_with_connections_query = query(
         "
@@ -43,7 +72,7 @@ pub async fn get_most_recent_audiobooks_with_data(
         RETURN ab AS audiobook, authors, categories, keywords, readers, series
     ",
     )
-    .param("limit", 10);
+    .param("limit", limit);
 
     let mut result_stream = graph.execute(get_audiobook_with_connections_query).await?;
     let mut audiobooks_data: Vec<AudiobookWithData> = Vec::new();

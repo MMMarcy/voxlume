@@ -32,6 +32,7 @@ futures-util = { workspace = true }
 hex-literal = { workspace = true }
 http = { workspace = true }
 indoc = { workspace = true }
+moka = { workspace = true }
 neo4rs = { workspace = true }
 password-hash = { workspace = true }
 rand = { workspace = true }

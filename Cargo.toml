@@ -37,6 +37,7 @@ hex-literal = { version = "*" }
 http = { version = "*" }
 indoc = { version = "2" }
 log = "0.4"
+moka = { version = "0.12", features = ["future"] }
 neo4rs = { version = "*" }
 password-hash = { version = "*" }
 rand = "0.9"
