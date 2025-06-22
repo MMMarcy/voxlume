@@ -46,6 +46,7 @@ async fn server_fn_handler(
 
     handle_server_fns_with_context(
         move || {
+            info!("Inside provide context for server fn handler");
             provide_context(auth_session.clone());
             provide_context(app_state.clone());
         },
@@ -56,17 +57,17 @@ async fn server_fn_handler(
 
 async fn leptos_routes_handler(
     auth_session: AuthSession,
-    state: State<AppState>,
+    State(app_state): State<AppState>,
     req: Request<AxumBody>,
 ) -> Response {
-    let State(app_state) = state.clone();
-
-    let handler = leptos_axum::render_app_to_stream_with_context(
+    let options_copy = app_state.leptos_options.clone();
+    let handler = leptos_axum::render_app_to_stream_in_order_with_context(
         move || {
+            info!("Inside provde context for leptos routes handler");
             provide_context(auth_session.clone());
-            provide_context(state.clone());
+            provide_context(app_state.clone());
         },
-        move || shell(app_state.leptos_options.clone()),
+        move || shell(options_copy.clone()),
     );
     handler(req).await.into_response()
 }
@@ -152,18 +153,35 @@ async fn main() {
         .build();
 
     let app_state = AppState {
-        leptos_options,
-        graph,
+        leptos_options: leptos_options.clone(),
+        graph: graph.clone(),
         database_connection_pool: pg_pool.clone(),
         routes: routes.clone(),
         password_handler: Argon2::default(),
-        cache: cache,
+        cache: cache.clone(),
     };
+    let other_state = AppState {
+        leptos_options: leptos_options.clone(),
+        graph: graph.clone(),
+        database_connection_pool: pg_pool.clone(),
+        routes: routes.clone(),
+        password_handler: Argon2::default(),
+        cache: cache.clone(),
+    };
+
     // Build our application with a route
     let binary = Router::new()
         .route("/api/{*fn_name}", post(server_fn_handler))
-        .leptos_routes_with_handler(routes, get(leptos_routes_handler))
-        .fallback(leptos_axum::file_and_error_handler::<AppState, _>(shell))
+        .leptos_routes_with_handler(routes.clone(), get(leptos_routes_handler))
+        .fallback(leptos_axum::file_and_error_handler_with_context::<
+            AppState,
+            _,
+        >(
+            move || {
+                provide_context(other_state.clone());
+            },
+            shell,
+        ))
         .layer(
             AuthSessionLayer::<SqlUser, i64, SessionPgPool, PgPool>::new(Some(pg_pool.clone()))
                 .with_config(auth_config),

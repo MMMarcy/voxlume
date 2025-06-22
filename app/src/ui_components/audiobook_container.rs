@@ -39,7 +39,7 @@ pub fn AudioBookCollectionContainer(
 
     let audiobooks: RwSignal<Option<Vec<AudiobookWithData>>> = RwSignal::new(None);
     let audiobooks_loaded = move || audiobooks.get().is_some();
-    let get_audiobooks_op = OnceResource::new(get_audiobooks(request_type));
+    let get_audiobooks_op = OnceResource::new_blocking(get_audiobooks(request_type));
     Effect::new(move || match get_audiobooks_op.get() {
         Some(Ok(data)) => {
             audiobooks.set(Some(data));

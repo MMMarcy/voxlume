@@ -11,7 +11,7 @@ use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
-    StaticSegment,
+    SsrMode, StaticSegment,
 };
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -67,7 +67,7 @@ pub fn App() -> impl IntoView {
     let (get_user_signal, set_user_signal) = signal(default_user);
     provide_context(get_user_signal);
     provide_context(set_user_signal);
-    let get_current_user_op = OnceResource::new(get_current_user());
+    let get_current_user_op = OnceResource::new_blocking(get_current_user());
     Effect::new(move || match get_current_user_op.get() {
         Some(Ok(Some(user))) => {
             debug_warn!("Got user {:?} from session", user);
@@ -91,7 +91,7 @@ pub fn App() -> impl IntoView {
             <main>
                 <Navbar />
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage />
+                    <Route path=StaticSegment("") view=HomePage ssr=SsrMode::Async/>
                     <Route path=StaticSegment("/register") view=RegisterPage />
                     <Route path=StaticSegment("/login") view=LoginPage />
                     <Route path=StaticSegment("/logout") view=LogoutPage />
