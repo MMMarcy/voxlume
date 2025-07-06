@@ -54,8 +54,9 @@ a.navbar-item[aria-current]:not([aria-current="false"]) {
    is causing issues with differing content. You could set a max-height
    or fixed height for the image container, but be mindful of aspect ratio distortion.
 */
-.card.is-equal-height-card .card-image {
+figure.image img{
   /* Example: If you want a fixed height for all images */
+  object-fit: contain;
   /* max-height: 200px; */
   /* overflow: hidden; */
 }
