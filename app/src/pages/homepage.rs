@@ -1,6 +1,6 @@
 use crate::ui_components::audiobook_container::AudioBookCollectionContainer;
 use entities_lib::{entities::user::User, GetAudioBookRequestType};
-use leptos::{logging, prelude::*};
+use leptos::prelude::*;
 
 #[island]
 pub fn HomePage() -> impl IntoView {

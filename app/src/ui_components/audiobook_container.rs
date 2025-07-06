@@ -1,12 +1,9 @@
-use std::{rc::Rc, sync::Arc};
-
 use entities_lib::{
-    entities::{audiobook, author},
-    AudioBook, AudiobookWithData, Author, Category, GetAudioBookRequestType, Keyword, Reader,
-    Series, User,
+    AudiobookWithData,
+    GetAudioBookRequestType,
+    User,
 };
-use leptos::{logging, prelude::*, svg::switch};
-use leptos::{logging::debug_warn, prelude::*};
+use leptos::{logging, prelude::*};
 use web_sys::TouchEvent;
 
 #[server(GetMostRecentAudiobooks, "/api")]
@@ -33,9 +30,16 @@ async fn get_audiobooks(
         state.shareable_args.user_audiobooks_per_homepage_section
     };
     info!("Gotten here.");
-    get_audiobooks_cached(&graph, &cache, user_id, request_type, limit_audiobooks, page)
-        .await
-        .map_err(|e| ServerFnError::new(format!("{:?}", e)))
+    get_audiobooks_cached(
+        &graph,
+        &cache,
+        user_id,
+        request_type,
+        limit_audiobooks,
+        page,
+    )
+    .await
+    .map_err(|e| ServerFnError::new(format!("{:?}", e)))
 }
 
 #[component]
@@ -65,7 +69,7 @@ pub fn AudioBookCollectionContainer(
             set_is_hover.update(|v| *v = !*v);
         }
     };
-    let on_touch_hanlder = move |e: TouchEvent| {
+    let on_touch_hanlder = move |_: TouchEvent| {
         set_is_hover.update(|v| *v = !*v);
     };
     view! {
@@ -101,7 +105,7 @@ pub fn AudioBookCollectionContainer(
 
 #[component]
 pub fn AudioBookComponentBox(audiobook_with_data: AudiobookWithData) -> impl IntoView {
-    let (audiobook, authors, categories, keywords, readers, maybe_series) = audiobook_with_data;
+    let (audiobook, authors, _categories, _keywords, _readers, _maybe_series) = audiobook_with_data;
     let title = audiobook.title;
     let author = authors[0].name.clone();
     let cover_url = audiobook.cover_url;

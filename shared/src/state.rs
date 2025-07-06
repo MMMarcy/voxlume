@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::fmt::Debug;
 
 use argon2::Argon2;

@@ -1,12 +1,10 @@
 use entities_lib::{
     AudioBook, AudiobookWithData, Author, Category, GetAudioBookRequestType, Keyword, Reader,
-    Series, User,
+    Series,
 };
-use neo4rs::{query, Error as Neo4rsError, Graph, Row}; // Make sure to import necessary items
-use serde::Deserialize; // Already shown above
-use tracing::{info, instrument, trace};
+use neo4rs::{query, Error as Neo4rsError, Graph}; 
+use tracing::{instrument, trace};
 
-use crate::state::AppState;
 use moka::future::Cache;
 
 #[derive(Debug, Clone)]
