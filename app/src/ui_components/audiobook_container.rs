@@ -12,6 +12,7 @@ use web_sys::TouchEvent;
 #[server(GetMostRecentAudiobooks, "/api")]
 async fn get_audiobooks(
     request_type: GetAudioBookRequestType,
+    page: u16,
 ) -> Result<Vec<AudiobookWithData>, ServerFnError> {
     use shared::auth_user::AuthSession;
     use shared::graph_trait::get_audiobooks_cached;
@@ -20,12 +21,19 @@ async fn get_audiobooks(
 
     info!("Before getting app state");
     let state = AppState::get_app_state()?;
+    let graph = state.graph;
+    let cache = state.cache;
     info!("Gotten app state");
     let auth_session =
         use_context::<AuthSession>().ok_or(ServerFnError::new("Couldn't find auth session"))?;
     let user_id = auth_session.current_user.map_or_else(|| 1i64, |v| v.id);
+    let limit_audiobooks = if user_id == 1 {
+        state.shareable_args.guest_user_audiobooks_per_homepage
+    } else {
+        state.shareable_args.user_audiobooks_per_homepage_section
+    };
     info!("Gotten here.");
-    get_audiobooks_cached(state, user_id, request_type, 10, 0)
+    get_audiobooks_cached(&graph, &cache, user_id, request_type, limit_audiobooks, page)
         .await
         .map_err(|e| ServerFnError::new(format!("{:?}", e)))
 }
@@ -39,7 +47,7 @@ pub fn AudioBookCollectionContainer(
 
     let audiobooks: RwSignal<Option<Vec<AudiobookWithData>>> = RwSignal::new(None);
     let audiobooks_loaded = move || audiobooks.get().is_some();
-    let get_audiobooks_op = OnceResource::new_blocking(get_audiobooks(request_type));
+    let get_audiobooks_op = OnceResource::new_blocking(get_audiobooks(request_type, 0));
     Effect::new(move || match get_audiobooks_op.get() {
         Some(Ok(data)) => {
             audiobooks.set(Some(data));
@@ -81,7 +89,7 @@ pub fn AudioBookCollectionContainer(
                         key=|v| v.0.path.clone()
                         let(audiobook_with_data)
                     >
-                    <div class="column is-one-fifth-fullhd is-one-fourth-desktop is-one-third-tablet is-full-mobile">
+                    <div class="column is-one-sixth is-one-fourth-desktop is-one-third-tablet is-full-mobile">
                         <AudioBookComponentBox audiobook_with_data=audiobook_with_data />
                     </div>
                     </For>

@@ -3489,6 +3489,7 @@ dependencies = [
  "axum_session_auth",
  "axum_session_sqlx",
  "chrono",
+ "clap",
  "entities_lib",
  "futures-util",
  "indoc",

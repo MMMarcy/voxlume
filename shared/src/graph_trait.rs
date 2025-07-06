@@ -7,6 +7,7 @@ use serde::Deserialize; // Already shown above
 use tracing::{info, instrument, trace};
 
 use crate::state::AppState;
+use moka::future::Cache;
 
 #[derive(Debug, Clone)]
 pub enum AppError {
@@ -20,21 +21,24 @@ impl From<Neo4rsError> for AppError {
     }
 }
 
-#[instrument]
+#[instrument(skip_all)]
 pub async fn get_audiobooks_cached(
-    app_state: AppState,
+    graph: &Graph,
+    cache: &Cache<
+        (i64, GetAudioBookRequestType, u16, u16),
+        Result<Vec<AudiobookWithData>, AppError>,
+    >,
     user_id: i64,
     request_type: GetAudioBookRequestType,
     limit: u16,
     page: u16,
 ) -> Result<Vec<AudiobookWithData>, AppError> {
-    let cache = app_state.cache;
     let cache_key = (user_id, request_type, limit, page);
     let res = match request_type {
         GetAudioBookRequestType::MostRecent => {
             cache
                 .get_with(cache_key, async {
-                    get_most_recent_audiobooks_with_data(&app_state.graph, limit, page).await
+                    get_most_recent_audiobooks_with_data(&graph, limit, page).await
                 })
                 .await
         }

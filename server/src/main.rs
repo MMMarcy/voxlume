@@ -6,7 +6,6 @@ use std::time::Duration;
 
 use app::{shell, App};
 use argon2::Argon2;
-use args::Environment;
 use axum::{
     body::Body as AxumBody,
     extract::{Path, State},
@@ -25,7 +24,7 @@ use leptos_axum::{generate_route_list, handle_server_fns_with_context, LeptosRou
 use moka::future::Cache;
 use neo4rs::ConfigBuilder;
 use neo4rs::Graph;
-use shared::state::AppState;
+use shared::{shared_args::Environment, state::AppState};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
 
@@ -111,7 +110,7 @@ async fn get_postgres_connection(args: &Args) -> PgPool {
 async fn main() {
     let args = Args::parse();
 
-    match args.environment {
+    match args.shared.environment {
         // TODO: In dev it is a bit too verbose. Especially the timestamp field. Find a way to
         // format that.
         Environment::DEV => tracing_subscriber::fmt()
@@ -143,7 +142,7 @@ async fn main() {
     .await
     .unwrap();
 
-    let cache_ttl: u64 = match args.environment {
+    let cache_ttl: u64 = match args.shared.environment {
         Environment::DEV => 5,
         Environment::PROD => 1800,
     };
@@ -159,6 +158,7 @@ async fn main() {
         routes: routes.clone(),
         password_handler: Argon2::default(),
         cache: cache.clone(),
+        shareable_args: args.shared.clone(),
     };
     let other_state = AppState {
         leptos_options: leptos_options.clone(),
@@ -167,6 +167,7 @@ async fn main() {
         routes: routes.clone(),
         password_handler: Argon2::default(),
         cache: cache.clone(),
+        shareable_args: args.shared.clone(),
     };
 
     // Build our application with a route

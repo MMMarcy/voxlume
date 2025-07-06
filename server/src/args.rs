@@ -1,10 +1,5 @@
-use clap::{Parser, ValueEnum};
-
-#[derive(Clone, Debug, ValueEnum, PartialEq)]
-pub enum Environment {
-    DEV,
-    PROD,
-}
+use clap::Parser;
+use shared::shared_args::ShareableArgsValues;
 
 #[derive(Debug, Parser, Clone)]
 #[command(version, about, long_about = None)]
@@ -33,7 +28,6 @@ pub struct Args {
     #[arg(long, default_value_t=String::from("127.0.0.1:5432"))]
     pub postgres_url: String,
 
-    #[clap(value_enum)]
-    #[arg(long, default_value_t=Environment::DEV)]
-    pub environment: Environment,
+    #[clap(flatten)]
+    pub shared: ShareableArgsValues,
 }

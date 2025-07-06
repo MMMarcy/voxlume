@@ -16,6 +16,7 @@ use sqlx::postgres::PgPool;
 use crate::db_trait::DbConnectionLike;
 use crate::graph_trait::AppError;
 use crate::password_handler::PasswordHandlerLike;
+use crate::shared_args::ShareableArgsValues;
 /// This takes advantage of Axum's `SubStates` feature by deriving `FromRef`. This is the only way to have more than one
 /// item in Axum's State. Leptos requires you to have leptosOptions in your State struct for the leptos route handlers
 #[derive(Clone, FromRef)]
@@ -27,6 +28,7 @@ pub struct AppState {
     pub password_handler: Argon2<'static>,
     pub cache:
         Cache<(i64, GetAudioBookRequestType, u16, u16), Result<Vec<AudiobookWithData>, AppError>>,
+    pub shareable_args: ShareableArgsValues,
 }
 
 impl AppState {
