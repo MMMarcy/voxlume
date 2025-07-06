@@ -1,10 +1,11 @@
 """Root agent for parsing."""
 
+from collections.abc import AsyncGenerator
 from typing import override
 
 from google.adk.agents import BaseAgent
+from google.adk.agents.invocation_context import InvocationContext
 from google.adk.events.event import Event
-from google.adk.runners import AsyncGenerator, InvocationContext
 from injector import inject
 from loguru import logger
 from neo4j import Driver

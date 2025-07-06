@@ -4,8 +4,9 @@ from textwrap import dedent
 from typing import override
 
 from google.adk.agents import LlmAgent
-from google.adk.artifacts.base_artifact_service import BaseArtifactService
-from google.adk.runners import InMemoryArtifactService, InMemorySessionService, Runner
+from google.adk.artifacts import BaseArtifactService, InMemoryArtifactService
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
 from google.adk.sessions.base_session_service import BaseSessionService
 from google.adk.sessions.session import Session
 from injector import Binder, Module, SingletonScope, provider, singleton

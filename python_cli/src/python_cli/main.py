@@ -3,10 +3,10 @@
 import asyncio
 from pathlib import Path
 from textwrap import dedent
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from absl import app, flags
-from google.adk.runners import Runner, Session
+from google.adk.runners import Runner
 from google.genai import types
 from injector import Binder, Injector, SingletonScope
 from loguru import logger
@@ -27,6 +27,9 @@ from python_cli.custom_types import (
 from python_cli.db.db_di_module import DBModule
 from python_cli.entities import QueueItem, QueueItemType
 
+if TYPE_CHECKING:
+    from google.adk.sessions import Session
+
 logger.disable("google.adk.models")
 
 _CONFIGURATION_PATH = flags.DEFINE_string(
@@ -37,7 +40,7 @@ _CONFIGURATION_PATH = flags.DEFINE_string(
 _GEMINI_MODEL_VERSION = flags.DEFINE_string(
     name="gemini_model_version",
     help="The gemini model version to use",
-    default="gemini-2.5-flash-preview-04-17",
+    default="gemini-2.5-flash",
 )
 _AGENT_NAME = flags.DEFINE_string(
     name="top_level_agent_name",
@@ -107,13 +110,13 @@ async def _main_impl() -> None:
             AgentDIModule(),
         ]
     )
-    queue_name = injector.get(QueueName)
+    queue_name = cast("QueueName", injector.get(QueueName))
 
     pgmq = injector.get(PGMQueue)
     await pgmq.init()
     await pgmq.create_queue(queue_name)
     runner = injector.get(Runner)
-    app_name = injector.get(AppName)
+    app_name = cast("AppName", injector.get(AppName))
     create_session_fn: CreateSessionFn = cast(
         "CreateSessionFn", injector.get(CreateSessionFn)
     )
@@ -128,11 +131,8 @@ async def _main_impl() -> None:
         _ = await pgmq.send(queue_name, message={"data": item.model_dump_json()})
 
     while msg := await pgmq.pop(queue_name):
-        if msg is None:
-            break
-
         session: Session = await create_session_fn("loop", "test_session", app_name)
-        message_content: dict[str, str] = msg.message
+        message_content: dict[str, str] = cast("dict[str, str]", msg.message)
 
         content = types.Content(
             role="user", parts=[types.Part(text=message_content["data"])]

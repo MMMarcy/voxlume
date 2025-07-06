@@ -6,9 +6,9 @@ readme = "README.md"
 authors = [{ name = "Marcello Steiner", email = "steiner.marcello@gmeil.com" }]
 requires-python = ">=3.12"
 dependencies = [
-    "absl-py>=2.1.0",
+    "absl-py>=2.3.1",
     "beautifulsoup4>=4.13.3",
-    "google-adk>=1.0.0",
+    "google-adk>=1.5.0",
     "injector>=0.22.0",
     "json5>=0.12.0",
     "langchain>=0.3.21",
@@ -35,7 +35,7 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "basedpyright>=1.28.1",
+    "basedpyright>=1.29.5",
     "mypy>=1.15.0",
     "ruff>=0.9.7",
     "types-requests>=2.32.0.20250306",
@@ -92,8 +92,8 @@ extend-include = ["**/*.ipynb"]
 line-length = 88
 indent-width = 4
 
-# Assume Python 3.11
-target-version = "py311"
+# Assume Python 3.12
+target-version = "py312"
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
@@ -247,5 +247,6 @@ reportMissingImports = true
 reportMissingTypeStubs = false
 reportUnknownMemberType = false
 reportArgumentType = false
+reportCallIssue = false
 reportAny = false
 pythonVersion = "3.12"

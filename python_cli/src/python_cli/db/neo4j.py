@@ -197,4 +197,4 @@ def does_audiobook_already_exists(driver: neo4j.Neo4jDriver, path: str) -> bool:
         } AS pathExists"""),
         path=path,
     )
-    return res[0]["pathExists"]
+    return bool(res[0]["pathExists"])
