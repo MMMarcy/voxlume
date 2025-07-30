@@ -1,2 +1,0 @@
-- [ ] Implement logging in server
-- [ ] Implement tracing for server

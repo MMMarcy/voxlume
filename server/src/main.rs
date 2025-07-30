@@ -160,16 +160,7 @@ async fn main() {
         cache: cache.clone(),
         shareable_args: args.shared.clone(),
     };
-    let other_state = AppState {
-        leptos_options: leptos_options.clone(),
-        graph: graph.clone(),
-        database_connection_pool: pg_pool.clone(),
-        routes: routes.clone(),
-        password_handler: Argon2::default(),
-        cache: cache.clone(),
-        shareable_args: args.shared.clone(),
-    };
-
+    let other_state = app_state.clone();
     // Build our application with a route
     let binary = Router::new()
         .route("/api/{*fn_name}", post(server_fn_handler))
