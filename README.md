@@ -1,90 +1,78 @@
-<picture>
-    <source srcset="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_Solid_White.svg" media="(prefers-color-scheme: dark)">
-    <img src="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_RGB.svg" alt="Leptos Logo">
-</picture>
+# Voxlume
 
-# Leptos Axum Starter Template
+A full-stack audiobook web application built with Rust and Leptos, featuring a Python-based data ingestion pipeline.
 
-This is a template for use with the [Leptos](https://github.com/leptos-rs/leptos) web framework and the [cargo-leptos](https://github.com/akesson/cargo-leptos) tool using [Axum](https://github.com/tokio-rs/axum).
+Voxlume is a web application for discovering and managing audiobooks. The backend is built with Rust using the Axum framework, and the frontend is a single-page application compiled to WebAssembly (WASM) using the Leptos framework. The application uses PostgreSQL for storing primary data and Neo4j for graph-based data relationships.
 
-## Creating your template repo
+Data is ingested into the application via a separate Python-based CLI tool. This tool scrapes audiobook information from `audiobookbay.is`, processes it using a Gemini AI model, and adds it to a PostgreSQL message queue (PGMQ) for the main application to consume.
 
-If you don't have `cargo-leptos` installed you can install it with
+## 🚀 Getting Started
 
-```bash
-cargo install cargo-leptos
-```
+### Prerequisites
 
-Then run
-```bash
-cargo leptos new --git leptos-rs/start-axum
-```
+- **Rust:** `nightly-2025-05-04`
+- **Cargo-Leptos:** `cargo install cargo-leptos`
+- **Docker:** for running the databases.
+- **Python 3.11+**
+- **uv:** `pip install uv`
 
-to generate a new project template.
+### Building and Running the Application
 
-```bash
-cd just-recipes
-```
+1.  **Start the databases:**
+    ```bash
+    docker-compose up -d
+    ```
+    (Note: A `docker-compose.yml` file may need to be created from the terraform configuration. See `terraform/` directory.)
 
-to go to your newly created project.  
-Feel free to explore the project structure, but the best place to start with your application code is in `src/app.rs`.  
-Addtionally, Cargo.toml may need updating as new versions of the dependencies are released, especially if things are not working after a `cargo update`.
+2.  **Run the application:**
+    ```bash
+    cargo leptos watch
+    ```
 
-## Running your project
+3.  Open your browser to `http://0.0.0.0:3000`.
 
-```bash
-cargo leptos watch
-```
+### Running the Python CLI
 
-## Installing Additional Tools
+1. **Install dependencies:**
+   ```bash
+   cd python_cli
+   uv pip install -r requirements.txt
+   ```
+   (Note: a `requirements.txt` may need to be generated from `pyproject.toml`)
 
-By default, `cargo-leptos` uses `nightly` Rust, `cargo-generate`, and `sass`. If you run into any trouble, you may need to install one or more of these tools.
+2. **Run the CLI:**
+   ```bash
+   python src/python_cli/main.py --backfill_job=yes
+   ```
 
-1. `rustup toolchain install nightly --allow-downgrade` - make sure you have Rust nightly
-2. `rustup target add wasm32-unknown-unknown` - add the ability to compile Rust to WebAssembly
-3. `cargo install cargo-generate` - install `cargo-generate` binary (should be installed automatically in future)
-4. `npm install -g sass` - install `dart-sass` (should be optional in future
+## 📂 Project Structure
 
-## Compiling for Release
-```bash
-cargo leptos build --release
-```
+- `app/`: Contains the main application logic, tying the frontend and server together.
+- `frontend/`: The frontend Leptos application (compiled to WASM).
+- `server/`: The backend Axum server.
+- `shared/`: Rust code shared between the `frontend` and `server`.
+- `model/`: Contains the data models, database migrations, and entity definitions.
+- `python_cli/`: A Python-based data ingestion pipeline.
+- `style/`: SASS/SCSS stylesheets.
+- `public/`: Static assets (images, fonts, etc.).
+- `terraform/`: Infrastructure as Code (IaC) for managing cloud resources.
+- `obsidian/`: Project notes and documentation.
 
-Will generate your server binary in target/server/release and your site package in target/site
+## 💻 Technology Stack
 
-## Testing Your Project
-```bash
-cargo leptos end-to-end
-```
+- **Framework:** [Leptos](https://leptos.dev/)
+- **Backend:** [Axum](https://github.com/tokio-rs/axum)
+- **Frontend:** Rust compiled to [WebAssembly](https://webassembly.org/)
+- **Databases:**
+  - [PostgreSQL](https://www.postgresql.org/)
+  - [Neo4j](https://neo4j.com/)
+- **Styling:** [SASS](https://sass-lang.com/) with [Bulma](https://bulma.io/)
+- **Infrastructure:** [Terraform](https://www.terraform.io/)
+- **AI:** [Google Gemini](https://ai.google.dev/)
 
-```bash
-cargo leptos end-to-end --release
-```
+## ✨ Features
 
-Cargo-leptos uses Playwright as the end-to-end test tool.  
-Tests are located in end2end/tests directory.
-
-## Executing a Server on a Remote Machine Without the Toolchain
-After running a `cargo leptos build --release` the minimum files needed are:
-
-1. The server binary located in `target/server/release`
-2. The `site` directory and all files within located in `target/site`
-
-Copy these files to your remote server. The directory structure should be:
-```text
-just-recipes
-site/
-```
-Set the following environment variables (updating for your project as needed):
-```text
-LEPTOS_OUTPUT_NAME="just-recipes"
-LEPTOS_SITE_ROOT="site"
-LEPTOS_SITE_PKG_DIR="pkg"
-LEPTOS_SITE_ADDR="127.0.0.1:3000"
-LEPTOS_RELOAD_PORT="3001"
-```
-Finally, run the server binary.
-
-## Licensing
-
-This template itself is released under the Unlicense. You should replace the LICENSE for your own application with an appropriate license if you plan to release it publicly.
+- **Audiobook Discovery:** Browse and search for audiobooks.
+- **User Authentication:** Register, login, and logout functionality.
+- **Theme Toggler:** Switch between light and dark modes.
+- **Data Ingestion:** Automated pipeline for scraping and processing audiobook data.
