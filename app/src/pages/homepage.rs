@@ -11,6 +11,7 @@ pub fn HomePage() -> impl IntoView {
              <AudioBookCollectionContainer
                 title={String::from("Most recent")}
                 request_type=GetAudioBookRequestType::MostRecent
+                maybe_author=None
             />
         </div>
     }

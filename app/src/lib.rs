@@ -1,17 +1,17 @@
 pub mod pages;
 pub mod ui_components;
 
-use crate::pages::homepage::HomePage;
 use crate::pages::login::LoginPage;
 use crate::pages::logout::LogoutPage;
 use crate::pages::register::RegisterPage;
+use crate::pages::{author_page::AuthorPage, homepage::HomePage};
 use entities_lib::entities::user::User;
 use leptos::logging::debug_warn;
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes},
-    SsrMode, StaticSegment,
+    path, SsrMode, StaticSegment,
 };
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -84,7 +84,7 @@ pub fn App() -> impl IntoView {
 
     view! {
         // sets the document title
-        <Title text="Welcome to Leptos" />
+        <Title text="Voxlume" />
 
         // content for this welcome page
         <Router>
@@ -92,6 +92,7 @@ pub fn App() -> impl IntoView {
                 <Navbar />
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=HomePage ssr=SsrMode::Async/>
+                    <Route path=path!("/author/:author") view=AuthorPage ssr=SsrMode::Async />
                     <Route path=StaticSegment("/register") view=RegisterPage />
                     <Route path=StaticSegment("/login") view=LoginPage />
                     <Route path=StaticSegment("/logout") view=LogoutPage />

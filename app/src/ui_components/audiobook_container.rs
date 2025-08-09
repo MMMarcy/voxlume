@@ -1,14 +1,12 @@
-use entities_lib::{
-    AudiobookWithData,
-    GetAudioBookRequestType,
-    User,
-};
+use entities_lib::{AudiobookWithData, Author, GetAudioBookRequestType, User};
 use leptos::{logging, prelude::*};
+use leptos_router::components::A;
 use web_sys::TouchEvent;
 
-#[server(GetMostRecentAudiobooks, "/api")]
+#[server(GetAudiobooks, "/api")]
 async fn get_audiobooks(
     request_type: GetAudioBookRequestType,
+    maybe_author: Option<Author>,
     page: u16,
 ) -> Result<Vec<AudiobookWithData>, ServerFnError> {
     use shared::auth_user::AuthSession;
@@ -33,7 +31,8 @@ async fn get_audiobooks(
     get_audiobooks_cached(
         &graph,
         &cache,
-        user_id,
+        Some(user_id),
+        maybe_author,
         request_type,
         limit_audiobooks,
         page,
@@ -46,12 +45,14 @@ async fn get_audiobooks(
 pub fn AudioBookCollectionContainer(
     title: String,
     request_type: GetAudioBookRequestType,
+    maybe_author: Option<Author>,
 ) -> impl IntoView {
     let _user_signal = use_context::<ReadSignal<User>>().unwrap();
 
     let audiobooks: RwSignal<Option<Vec<AudiobookWithData>>> = RwSignal::new(None);
     let audiobooks_loaded = move || audiobooks.get().is_some();
-    let get_audiobooks_op = OnceResource::new_blocking(get_audiobooks(request_type, 0));
+    let get_audiobooks_op =
+        OnceResource::new_blocking(get_audiobooks(request_type, maybe_author, 0));
     Effect::new(move || match get_audiobooks_op.get() {
         Some(Ok(data)) => {
             audiobooks.set(Some(data));
@@ -104,10 +105,32 @@ pub fn AudioBookCollectionContainer(
 }
 
 #[component]
+fn AuthorLinks(authors: Vec<Author>) -> impl IntoView {
+    let author_count = authors.len();
+    view! {
+        <p class="subtitle is-6">
+            {"By "}
+            {authors
+                .into_iter()
+                .enumerate()
+                .map(|(index, author)| {
+                    let separator = if index < author_count - 1 { ", " } else { "" };
+                    view! {
+                        <>
+                            <A href=format!("/author/{}", author.name)>{author.name}</A>
+                            {separator}
+                        </>
+                    }
+                })
+                .collect_view()}
+        </p>
+    }
+}
+
+#[component]
 pub fn AudioBookComponentBox(audiobook_with_data: AudiobookWithData) -> impl IntoView {
     let (audiobook, authors, _categories, _keywords, _readers, _maybe_series) = audiobook_with_data;
     let title = audiobook.title;
-    let author = authors[0].name.clone();
     let cover_url = audiobook.cover_url;
     // let description = audiobook.description;
     let very_short_description = audiobook.very_short_description;
@@ -127,7 +150,7 @@ pub fn AudioBookComponentBox(audiobook_with_data: AudiobookWithData) -> impl Int
         <div class="media">
         <div class="media-content">
             <p class="title is-4">{ title }</p>
-            <p class="subtitle is-6">By { author }</p>
+            <AuthorLinks authors=authors />
         </div>
         </div>
 

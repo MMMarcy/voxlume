@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "ssr")]
 use sqlx::FromRow;
 
+pub const GUEST_USER_ID: i64 = 1;
+
 /// User entity.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ssr", derive(FromRow))]
@@ -20,7 +22,7 @@ pub struct User {
 impl Default for User {
     fn default() -> Self {
         Self {
-            id: 1_i64,
+            id: GUEST_USER_ID,
             username: String::from("Guest"),
             last_access: 0_i64,
         }
@@ -29,6 +31,6 @@ impl Default for User {
 
 impl User {
     pub fn is_guest(&self) -> bool {
-        self.id == 1_i64
+        self.id == GUEST_USER_ID
     }
 }
