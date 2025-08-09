@@ -3,6 +3,7 @@ pub mod ui_components;
 
 use crate::pages::login::LoginPage;
 use crate::pages::logout::LogoutPage;
+use crate::pages::reader_page::ReaderPage;
 use crate::pages::register::RegisterPage;
 use crate::pages::{author_page::AuthorPage, homepage::HomePage};
 use entities_lib::entities::user::User;
@@ -93,6 +94,7 @@ pub fn App() -> impl IntoView {
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("") view=HomePage ssr=SsrMode::Async/>
                     <Route path=path!("/author/:author") view=AuthorPage ssr=SsrMode::Async />
+                    <Route path=path!("/reader/:reader") view=ReaderPage ssr=SsrMode::Async />
                     <Route path=StaticSegment("/register") view=RegisterPage />
                     <Route path=StaticSegment("/login") view=LoginPage />
                     <Route path=StaticSegment("/logout") view=LogoutPage />

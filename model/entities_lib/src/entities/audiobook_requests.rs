@@ -4,4 +4,5 @@ use serde::{Deserialize, Serialize};
 pub enum GetAudioBookRequestType {
     MostRecent = 0,
     ByAuthor = 1,
+    ByReader = 2,
 }

@@ -12,6 +12,7 @@ pub enum AppError {
     Neo4jError(String),
     DeserializationError(String), // Or use a more specific error type
     NoAuthorProvided,
+    NoReaderProvided,
 }
 
 impl From<Neo4rsError> for AppError {
@@ -29,6 +30,7 @@ pub async fn get_audiobooks_cached(
     >,
     maybe_user_id: Option<i64>,
     maybe_author: Option<Author>,
+    maybe_reader: Option<Reader>,
     request_type: GetAudioBookRequestType,
     limit: u16,
     page: u16,
@@ -52,8 +54,89 @@ pub async fn get_audiobooks_cached(
                 })?;
             get_audiobooks_with_data_by_author(&graph, author, limit, page).await
         }
+        GetAudioBookRequestType::ByReader => {
+            let reader = maybe_reader
+                .ok_or(AppError::NoReaderProvided)
+                .map_err(|e| {
+                    error!("Get audiobooks by reader with Reader = None");
+                    e
+                })?;
+            get_audiobooks_with_data_by_reader(&graph, reader, limit, page).await
+        }
     };
     res
+}
+
+#[instrument(skip_all)]
+pub async fn get_audiobooks_with_data_by_reader(
+    graph: &Graph,
+    reader: Reader,
+    limit: u16,
+    _page: u16,
+) -> Result<Vec<AudiobookWithData>, AppError> {
+    let get_audiobook_with_connections_query = query(
+        "
+        MATCH (target_reader:Reader {name: $reader_name})
+        MATCH (target_reader)<-[:READ_BY]-(ab:Audiobook)
+        WITH ab
+        ORDER BY ab.last_upload DESC
+        LIMIT $limit
+
+        OPTIONAL MATCH (ab)-[:WRITTEN_BY]->(author:Author)
+        WITH ab, collect(author) AS authors
+
+        OPTIONAL MATCH (ab)-[:CATEGORIZED_AS]->(category:Category)
+        WITH ab, authors, collect(category) AS categories
+
+        OPTIONAL MATCH (ab)-[:HAS_KEYWORD]->(keyword:Keyword)
+        WITH ab, authors, categories, collect(keyword) AS keywords
+
+        OPTIONAL MATCH (ab)-[:READ_BY]->(reader:Reader)
+        WITH ab, authors, categories, keywords, collect(reader) AS readers
+
+        OPTIONAL MATCH (ab)-[:PART_OF_SERIES]->(series:Series)
+
+        RETURN ab AS audiobook, authors, categories, keywords, readers, series
+    ",
+    )
+    .param("reader_name", reader.name)
+    .param("limit", limit);
+
+    let mut result_stream = graph.execute(get_audiobook_with_connections_query).await?;
+    let mut audiobooks_data: Vec<AudiobookWithData> = Vec::new();
+
+    while let Ok(maybe_row) = result_stream.next().await {
+        trace!("Inside getting row. Row: {:?}", maybe_row);
+        if maybe_row.is_none() {
+            break;
+        }
+        let row = maybe_row.expect("Should be ok to extract the value");
+
+        let audiobook: AudioBook = row.get("audiobook").map_err(|e| {
+            AppError::DeserializationError(format!("Failed to get audiobook: {}", e))
+        })?;
+
+        let authors: Vec<Author> = row
+            .get("authors")
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get authors: {}", e)))?;
+        let categories: Vec<Category> = row.get("categories").map_err(|e| {
+            AppError::DeserializationError(format!("Failed to get categories: {}", e))
+        })?;
+        let keywords: Vec<Keyword> = row.get("keywords").map_err(|e| {
+            AppError::DeserializationError(format!("Failed to get keywords: {}", e))
+        })?;
+        let readers: Vec<Reader> = row
+            .get("readers")
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get readers: {}", e)))?;
+
+        let series: Option<Series> = row
+            .get("series")
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get series: {}", e)))?;
+
+        audiobooks_data.push((audiobook, authors, categories, keywords, readers, series));
+    }
+
+    Ok(audiobooks_data)
 }
 
 #[instrument(skip_all)]
