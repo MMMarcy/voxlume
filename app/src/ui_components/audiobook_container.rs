@@ -50,18 +50,29 @@ pub fn AudioBookCollectionContainer(
 
     let audiobooks: RwSignal<Option<Vec<AudiobookWithData>>> = RwSignal::new(None);
     let audiobooks_loaded = move || audiobooks.get().is_some();
-    let get_audiobooks_op = OnceResource::new_blocking(get_audiobooks(request_type, 0));
-    Effect::new(move || match get_audiobooks_op.get() {
-        Some(Ok(data)) => {
-            audiobooks.set(Some(data));
-        }
-        Some(Err(e)) => {
-            logging::debug_warn!("{:?}", e);
-        }
-        None => {
-            logging::debug_warn!("get_audiobooks_op is None")
+
+    let get_audiobooks_resource = Resource::new(
+        move || request_type.clone(),
+        move |current_request_type| get_audiobooks(current_request_type, 0),
+    );
+
+    Effect::new(move || {
+        let result = get_audiobooks_resource.get();
+        match result {
+            Some(Ok(data)) => {
+                logging::log!("{}", "Some(Ok(data))");
+                audiobooks.set(Some(data));
+            }
+            Some(Err(e)) => {
+                logging::debug_warn!("{:?}", e);
+                audiobooks.set(None);
+            }
+            None => {
+                audiobooks.set(None);
+            }
         }
     });
+
     let (is_hover, set_is_hover) = signal(false);
     let on_hover_handler = move |_| {
         if !_user_signal().is_guest() {
@@ -88,7 +99,7 @@ pub fn AudioBookCollectionContainer(
                     fallback=move|| view! {"loading"} >
                     // TODO: audiobook should have a key that is Copy
                     <For
-                        each=move || audiobooks.get().unwrap()
+                        each=move || audiobooks().unwrap()
                         key=|v| v.0.path.clone()
                         let(audiobook_with_data)
                     >
@@ -187,10 +198,8 @@ pub fn AudioBookComponentBox(audiobook_with_data: AudiobookWithData) -> impl Int
     let (audiobook, authors, categories, keywords, readers, _maybe_series) = audiobook_with_data;
     let title = audiobook.title;
     let cover_url = audiobook.cover_url;
-    // let description = audiobook.description;
     let very_short_description = audiobook.very_short_description;
 
-    // let audiobook = Arc::new(audiobook);
     view! {
     <div class="card is-equal-height-card">
     <div class="card-image">

@@ -97,7 +97,7 @@ pub fn App() -> impl IntoView {
                     <Route path=StaticSegment("") view=HomePage ssr=SsrMode::Async/>
                     <Route path=path!("/author/:author") view=AuthorPage ssr=SsrMode::Async />
                     <Route path=path!("/reader/:reader") view=ReaderPage ssr=SsrMode::Async />
-                    <Route path=path!("/category/:category") view=CategoryPage ssr=SsrMode::Async />
+                    <Route path=path!("/category/:category") view=CategoryPage />
                     <Route path=path!("/keyword/:keyword") view=KeywordPage ssr=SsrMode::Async />
                     <Route path=StaticSegment("/register") view=RegisterPage />
                     <Route path=StaticSegment("/login") view=LoginPage />

@@ -15,15 +15,13 @@ pub fn CategoryPage() -> impl IntoView {
             maybe_category().unwrap_or_else(|| "".into())
         )
     };
-    unsafe {
-        view! {
-            <Title text=section_title() />
-            <div class="section">
-                 <AudioBookCollectionContainer
-                    title=section_title()
-                    request_type=GetAudioBookRequestType::ByCategory(Category {value: maybe_category().unwrap_unchecked()})
-                />
-            </div>
-        }
+    view! {
+        <Title text=section_title() />
+        <div class="section">
+             <AudioBookCollectionContainer
+                title=section_title()
+                request_type=GetAudioBookRequestType::ByCategory(Category {value: maybe_category().unwrap()})
+            />
+        </div>
     }
 }
