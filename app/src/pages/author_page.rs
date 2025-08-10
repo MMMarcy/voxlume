@@ -9,7 +9,7 @@ pub fn AuthorPage() -> impl IntoView {
     let params = use_params_map();
     let _user_signal = use_context::<ReadSignal<User>>().unwrap();
     let maybe_author = move || params.read().get("author");
-    let section_title = || {
+    let section_title = move || {
         format!(
             "Audiobooks by {}",
             maybe_author().unwrap_or_else(|| "".into())
@@ -20,8 +20,8 @@ pub fn AuthorPage() -> impl IntoView {
             <Title text=section_title() />
             <div class="section">
                  <AudioBookCollectionContainer
-                    title=section_title()
-                    request_type=GetAudioBookRequestType::ByAuthor(Author {name: maybe_author().unwrap_unchecked()})
+                    title=Signal::derive(move || section_title())
+                    request_type=Signal::derive(move || GetAudioBookRequestType::ByAuthor(Author {name: maybe_author().unwrap_unchecked()}))
                 />
             </div>
         }

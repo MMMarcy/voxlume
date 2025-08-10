@@ -43,8 +43,8 @@ async fn get_audiobooks(
 
 #[component]
 pub fn AudioBookCollectionContainer(
-    title: String,
-    request_type: GetAudioBookRequestType,
+    title: Signal<String>,
+    request_type: Signal<GetAudioBookRequestType>,
 ) -> impl IntoView {
     let _user_signal = use_context::<ReadSignal<User>>().unwrap();
 
@@ -53,7 +53,7 @@ pub fn AudioBookCollectionContainer(
 
     let get_audiobooks_resource = Resource::new(
         move || request_type.clone(),
-        move |current_request_type| get_audiobooks(current_request_type, 0),
+        move |current_request_type| get_audiobooks(current_request_type(), 0),
     );
 
     Effect::new(move || {
@@ -84,7 +84,7 @@ pub fn AudioBookCollectionContainer(
     };
     view! {
         <div class="container is-fluid" style="margin-top: 1rem">
-            <p class="title">{title}</p>
+            <p class="title">{title()}</p>
             <div
                 class="columns" class:is-multiline=move || _user_signal().is_guest()
                 class:overlow_x_visible=is_hover
