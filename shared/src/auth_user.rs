@@ -21,18 +21,15 @@ impl Authentication<SqlUser, i64, PgPool> for SqlUser {
         let _guard = span.enter();
         let db_connection = pool.ok_or(anyhow!("Connection pool not available".to_string()))?;
 
-        match db_connection.get_user_by_id(userid).await? {
-            Some(user) => {
-                info!("User (id:{}) loaded", userid);
-                Ok(user)
-            }
-            None => {
-                error!(
-                    "User (id:{}) couldn't be loaded as it wasn't found in the db.",
-                    userid
-                );
-                Err(anyhow!("No user found"))
-            }
+        if let Some(user) = db_connection.get_user_by_id(userid).await? {
+            info!("User (id:{}) loaded", userid);
+            Ok(user)
+        } else {
+            error!(
+                "User (id:{}) couldn't be loaded as it wasn't found in the db.",
+                userid
+            );
+            Err(anyhow!("No user found"))
         }
     }
 
@@ -52,37 +49,50 @@ impl Authentication<SqlUser, i64, PgPool> for SqlUser {
 
 #[async_trait]
 impl HasPermission<PgPool> for SqlUser {
+    #[allow(clippy::ref_option_ref)]
     async fn has(&self, _perm: &str, _pool: &Option<&PgPool>) -> bool {
         true
     }
 }
 
 impl SqlUser {
+    /// .
+    #[must_use]
     pub fn into_user(self) -> User {
-        return User {
+        User {
             id: self.id,
-            username: self.username.into(),
+            username: self.username,
             last_access: self.last_access.timestamp(),
-        };
+        }
     }
 
-    pub async fn create_local_user(
+    /// Creates as local user that will be then stored into the users table.
+    ///
+    /// # Panics
+    ///
+    /// This function shouldn't panic as any valid String reference can be hashed.
+    /// If this is not the case, I was wrong.
+    pub fn create_local_user(
         username: String,
-        password: String,
+        password: &String,
         password_handler: &impl PasswordHandlerLike,
     ) -> SqlUser {
         let password_hash = password_handler
-            .generate_password_hash(&password)
+            .generate_password_hash(password)
             .expect("It shouldn't be possible for this to fail :/");
-        return SqlUser {
+        SqlUser {
             id: -1,
             username,
             anonymous: false,
             password_mcf: password_hash,
             last_access: chrono::Utc::now(),
-        };
+        }
     }
 
+    /// Logins a user.
+    ///
+    /// # Errors
+    /// Either fir the user wasn't found or there was a technical problem with the user lookup.
     #[instrument(skip_all)]
     pub async fn login_user(
         username: String,
@@ -95,14 +105,21 @@ impl SqlUser {
         match maybe_user {
             Some(user) => password_handler
                 .validate_password_against_mcf(&user.password_mcf, &password)
-                .map(|_| user),
+                .map(|()| user),
             None => Err(anyhow!(String::from("User not found"))),
         }
     }
 
+    /// Registers a user.
+    ///
+    /// The function first inserts a user into the DB and retrieves it so that we can
+    /// propagate the user id created by postgres.
+    ///
+    /// # Errors
+    /// If any of the insert/retrieve operations fail.
     #[instrument(skip_all)]
     pub async fn register_user(
-        self: Self,
+        self,
         db_connection_pool: &impl DbConnectionLike,
     ) -> Result<SqlUser> {
         let username = &self.username.clone();

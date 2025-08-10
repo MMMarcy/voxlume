@@ -40,7 +40,7 @@ pub async fn register_user(
         auth.current_user.clone().map(|u| u.into_user())
     );
 
-    let local_user = SqlUser::create_local_user(username, password, &argon2).await;
+    let local_user = SqlUser::create_local_user(username, &password, &argon2);
 
     info!("Fn get_current_user: {:?}", &local_user);
     match local_user.register_user(&db_pool).await {
