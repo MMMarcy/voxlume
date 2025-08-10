@@ -1,6 +1,8 @@
 pub mod pages;
 pub mod ui_components;
 
+use crate::pages::category_page::CategoryPage;
+use crate::pages::keyword_page::KeywordPage;
 use crate::pages::login::LoginPage;
 use crate::pages::logout::LogoutPage;
 use crate::pages::reader_page::ReaderPage;
@@ -95,6 +97,8 @@ pub fn App() -> impl IntoView {
                     <Route path=StaticSegment("") view=HomePage ssr=SsrMode::Async/>
                     <Route path=path!("/author/:author") view=AuthorPage ssr=SsrMode::Async />
                     <Route path=path!("/reader/:reader") view=ReaderPage ssr=SsrMode::Async />
+                    <Route path=path!("/category/:category") view=CategoryPage ssr=SsrMode::Async />
+                    <Route path=path!("/keyword/:keyword") view=KeywordPage ssr=SsrMode::Async />
                     <Route path=StaticSegment("/register") view=RegisterPage />
                     <Route path=StaticSegment("/login") view=LoginPage />
                     <Route path=StaticSegment("/logout") view=LogoutPage />
