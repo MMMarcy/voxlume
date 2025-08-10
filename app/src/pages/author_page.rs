@@ -15,16 +15,15 @@ pub fn AuthorPage() -> impl IntoView {
             maybe_author().unwrap_or_else(|| "".into())
         )
     };
-
-    view! {
-        <Title text=section_title() />
-        <div class="section">
-             <AudioBookCollectionContainer
-                title=section_title()
-                request_type=GetAudioBookRequestType::ByAuthor
-                maybe_author=maybe_author().map(|v| Author{ name: v })
-                maybe_reader=None
-            />
-        </div>
+    unsafe {
+        view! {
+            <Title text=section_title() />
+            <div class="section">
+                 <AudioBookCollectionContainer
+                    title=section_title()
+                    request_type=GetAudioBookRequestType::ByAuthor(Author {name: maybe_author().unwrap_unchecked()})
+                />
+            </div>
+        }
     }
 }

@@ -8,8 +8,6 @@ use web_sys::TouchEvent;
 #[server(GetAudiobooks, "/api")]
 async fn get_audiobooks(
     request_type: GetAudioBookRequestType,
-    maybe_author: Option<Author>,
-    maybe_reader: Option<Reader>,
     page: u16,
 ) -> Result<Vec<AudiobookWithData>, ServerFnError> {
     use shared::auth_user::AuthSession;
@@ -35,8 +33,6 @@ async fn get_audiobooks(
         &graph,
         &cache,
         Some(user_id),
-        maybe_author,
-        maybe_reader,
         request_type,
         limit_audiobooks,
         page,
@@ -49,15 +45,12 @@ async fn get_audiobooks(
 pub fn AudioBookCollectionContainer(
     title: String,
     request_type: GetAudioBookRequestType,
-    maybe_author: Option<Author>,
-    maybe_reader: Option<Reader>,
 ) -> impl IntoView {
     let _user_signal = use_context::<ReadSignal<User>>().unwrap();
 
     let audiobooks: RwSignal<Option<Vec<AudiobookWithData>>> = RwSignal::new(None);
     let audiobooks_loaded = move || audiobooks.get().is_some();
-    let get_audiobooks_op =
-        OnceResource::new_blocking(get_audiobooks(request_type, maybe_author, maybe_reader, 0));
+    let get_audiobooks_op = OnceResource::new_blocking(get_audiobooks(request_type, 0));
     Effect::new(move || match get_audiobooks_op.get() {
         Some(Ok(data)) => {
             audiobooks.set(Some(data));

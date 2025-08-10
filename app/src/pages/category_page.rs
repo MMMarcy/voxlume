@@ -1,18 +1,18 @@
 use crate::ui_components::audiobook_container::AudioBookCollectionContainer;
-use entities_lib::{entities::user::User, GetAudioBookRequestType, Reader};
+use entities_lib::{entities::user::User, Category, GetAudioBookRequestType};
 use leptos::prelude::*;
 use leptos_meta::Title;
 use leptos_router::hooks::use_params_map;
 
 #[component]
-pub fn ReaderPage() -> impl IntoView {
+pub fn CategoryPage() -> impl IntoView {
     let params = use_params_map();
     let _user_signal = use_context::<ReadSignal<User>>().unwrap();
-    let maybe_reader = move || params.read().get("reader");
+    let maybe_category = move || params.read().get("category");
     let section_title = || {
         format!(
-            "Audiobooks read by {}",
-            maybe_reader().unwrap_or_else(|| "".into())
+            "Audiobooks with category {}",
+            maybe_category().unwrap_or_else(|| "".into())
         )
     };
     unsafe {
@@ -21,8 +21,7 @@ pub fn ReaderPage() -> impl IntoView {
             <div class="section">
                  <AudioBookCollectionContainer
                     title=section_title()
-                    request_type=GetAudioBookRequestType::ByReader(Reader { name: maybe_reader().unwrap_unchecked()})
-
+                    request_type=GetAudioBookRequestType::ByCategory(Category {value: maybe_category().unwrap_unchecked()})
                 />
             </div>
         }

@@ -1,8 +1,13 @@
 use serde::{Deserialize, Serialize};
 
+use crate::{Author, Category, Keyword, Reader, Series};
+
 #[derive(Clone, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub enum GetAudioBookRequestType {
-    MostRecent = 0,
-    ByAuthor = 1,
-    ByReader = 2,
+    MostRecent,
+    ByAuthor(Author),
+    ByReader(Reader),
+    ByCategory(Category),
+    ByKeyword(Keyword),
+    BySeries(Series),
 }

@@ -29,8 +29,6 @@ pub async fn get_audiobooks_cached(
         Result<Vec<AudiobookWithData>, AppError>,
     >,
     maybe_user_id: Option<i64>,
-    maybe_author: Option<Author>,
-    maybe_reader: Option<Reader>,
     request_type: GetAudioBookRequestType,
     limit: u16,
     page: u16,
@@ -41,28 +39,19 @@ pub async fn get_audiobooks_cached(
         GetAudioBookRequestType::MostRecent => {
             cache
                 .get_with(cache_key, async {
-                    get_most_recent_audiobooks_with_data(&graph, limit, page).await
+                    get_most_recent_audiobooks_with_data(graph, limit, page).await
                 })
                 .await
         }
-        GetAudioBookRequestType::ByAuthor => {
-            let author = maybe_author
-                .ok_or(AppError::NoAuthorProvided)
-                .map_err(|e| {
-                    error!("Get audiobooks by author with Author = None");
-                    e
-                })?;
-            get_audiobooks_with_data_by_author(&graph, author, limit, page).await
+        GetAudioBookRequestType::ByAuthor(author) => {
+            get_audiobooks_with_data_by_author(graph, author, limit, page).await
         }
-        GetAudioBookRequestType::ByReader => {
-            let reader = maybe_reader
-                .ok_or(AppError::NoReaderProvided)
-                .map_err(|e| {
-                    error!("Get audiobooks by reader with Reader = None");
-                    e
-                })?;
-            get_audiobooks_with_data_by_reader(&graph, reader, limit, page).await
+        GetAudioBookRequestType::ByReader(reader) => {
+            get_audiobooks_with_data_by_reader(graph, reader, limit, page).await
         }
+        GetAudioBookRequestType::ByCategory(category) => todo!(),
+        GetAudioBookRequestType::ByKeyword(series) => todo!(),
+        GetAudioBookRequestType::BySeries(series) => todo!(),
     };
     res
 }
