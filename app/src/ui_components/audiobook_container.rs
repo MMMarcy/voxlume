@@ -1,4 +1,6 @@
-use entities_lib::{AudiobookWithData, Author, GetAudioBookRequestType, Reader, User};
+use entities_lib::{
+    AudiobookWithData, Author, Category, GetAudioBookRequestType, Keyword, Reader, User,
+};
 use leptos::{logging, prelude::*};
 use leptos_router::components::A;
 use web_sys::TouchEvent;
@@ -154,8 +156,42 @@ fn AuthorLinks(authors: Vec<Author>) -> impl IntoView {
 }
 
 #[component]
+fn KeywordsTag(keywords: Vec<Keyword>) -> impl IntoView {
+    view! {
+        <div class="tags are-normal">
+            {"Keywords: "}
+            {keywords
+                .into_iter()
+                .map(|keyword| {
+                    view! {
+                        <A href=format!("/keyword/{}", keyword.value) class:tag=true class:is-light=true >{keyword.value}</A>
+                    }
+                })
+                .collect_view()}
+        </div>
+    }
+}
+
+#[component]
+fn CategoriesTag(categories: Vec<Category>) -> impl IntoView {
+    view! {
+        <div class="tags are-normal">
+            {"Categories: "}
+            {categories
+                .into_iter()
+                .map(|category| {
+                    view! {
+                        <A href=format!("/category/{}", category.value) class:tag=true class:is-info=true >{category.value}</A>
+                    }
+                })
+                .collect_view()}
+        </div>
+    }
+}
+
+#[component]
 pub fn AudioBookComponentBox(audiobook_with_data: AudiobookWithData) -> impl IntoView {
-    let (audiobook, authors, _categories, _keywords, readers, _maybe_series) = audiobook_with_data;
+    let (audiobook, authors, categories, keywords, readers, _maybe_series) = audiobook_with_data;
     let title = audiobook.title;
     let cover_url = audiobook.cover_url;
     // let description = audiobook.description;
@@ -184,7 +220,10 @@ pub fn AudioBookComponentBox(audiobook_with_data: AudiobookWithData) -> impl Int
         <div class="content">
            { very_short_description }
         <br />
-        // <time datetime="2016-1-1">11:09 PM - 1 Jan 2016</time>
+        <br />
+        <CategoriesTag categories=categories />
+        <br />
+        <KeywordsTag keywords=keywords />
         </div>
     </div>
     </div>

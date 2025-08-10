@@ -32,6 +32,10 @@ pub trait PasswordHandlerLike: Send + Sync {
     /// # Returns
     ///
     /// A `Result` containing the generated MCF string hash on success, or an error on failure.
+    ///
+    /// # Errors
+    ///
+    /// If for any reason the password couldn't be hashed.
     fn generate_password_hash(&self, provided_password: &impl AsRef<str>) -> Result<String>;
 }
 
