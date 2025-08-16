@@ -17,7 +17,7 @@ pub fn AuthorPage() -> impl IntoView {
     };
     unsafe {
         view! {
-            <Title text=section_title() />
+            <Title text=section_title />
             <div class="section">
                  <AudioBookCollectionContainer
                     title=Signal::derive(move || section_title())

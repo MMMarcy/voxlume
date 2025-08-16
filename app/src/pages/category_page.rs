@@ -14,11 +14,15 @@ pub fn CategoryPage() -> impl IntoView {
             maybe_category().unwrap_or_else(|| "".into())
         )
     };
+
+    // Note: The `unwrap()` call below will panic if the "category" param is missing.
+    // It's safer to handle the `None` case, for example, by conditionally
+    // rendering the component or showing a "Not Found" message.
     view! {
-        <Title text=section_title() />
+        <Title text=section_title />
         <div class="section">
              <AudioBookCollectionContainer
-                title=Signal::derive(move || section_title())
+                title=Signal::derive(section_title)
                 request_type=Signal::derive(move || GetAudioBookRequestType::ByCategory(Category {value: maybe_category().unwrap()}))
             />
         </div>

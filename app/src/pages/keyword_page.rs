@@ -23,13 +23,10 @@ pub fn KeywordPage() -> impl IntoView {
             .and_then(|p| p.keyword.clone())
             .unwrap()
     };
-    let section_title = move || {
-        logging::log!("{}", "title changed");
-        format!("Audiobooks with keyword {}", keyword())
-    };
+    let section_title = move || format!("Audiobooks with keyword {}", keyword());
 
     view! {
-        <Title text=section_title() />
+        <Title text=section_title />
         <div class="section">
              <AudioBookCollectionContainer
                 title=Signal::derive(move || format!("Audiobooks with keyword {}", keyword()))

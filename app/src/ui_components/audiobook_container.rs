@@ -52,7 +52,7 @@ pub fn AudioBookCollectionContainer(
     let audiobooks_loaded = move || audiobooks.get().is_some();
 
     let get_audiobooks_resource = Resource::new(
-        move || request_type.clone(),
+        move || request_type,
         move |current_request_type| get_audiobooks(current_request_type(), 0),
     );
 
@@ -60,7 +60,7 @@ pub fn AudioBookCollectionContainer(
         let result = get_audiobooks_resource.get();
         match result {
             Some(Ok(data)) => {
-                logging::log!("{}", "Some(Ok(data))");
+                logging::debug_warn!("Found {} audiobooks", &data.len());
                 audiobooks.set(Some(data));
             }
             Some(Err(e)) => {
@@ -84,7 +84,7 @@ pub fn AudioBookCollectionContainer(
     };
     view! {
         <div class="container is-fluid" style="margin-top: 1rem">
-            <p class="title">{title()}</p>
+            <p class="title">{title}</p>
             <div
                 class="columns" class:is-multiline=move || _user_signal().is_guest()
                 class:overlow_x_visible=is_hover
