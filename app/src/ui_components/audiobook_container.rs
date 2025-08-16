@@ -1,5 +1,5 @@
 use entities_lib::{
-    AudiobookWithData, Author, Category, GetAudioBookRequestType, Keyword, Reader, User,
+    AudiobookWithData, Author, Category, GetAudioBookRequestType, Keyword, Reader, Series, User,
 };
 use leptos::{logging, prelude::*};
 use leptos_router::components::A;
@@ -186,8 +186,21 @@ fn CategoriesTag(categories: Vec<Category>) -> impl IntoView {
 }
 
 #[component]
+fn SeriesLink(maybe_series: Option<Series>) -> impl IntoView {
+    maybe_series.map(|series| {
+        view! {
+            <>
+                {"Part of \""}
+                <A href=format!("/series/{}", series.title)>{series.title.clone()}</A>
+                {"\" series"}
+            </>
+        }
+    })
+}
+
+#[component]
 pub fn AudioBookComponentBox(audiobook_with_data: AudiobookWithData) -> impl IntoView {
-    let (audiobook, authors, categories, keywords, readers, _maybe_series) = audiobook_with_data;
+    let (audiobook, authors, categories, keywords, readers, maybe_series) = audiobook_with_data;
     let title = audiobook.title;
     let cover_url = audiobook.cover_url;
     let very_short_description = audiobook.very_short_description;
@@ -208,6 +221,7 @@ pub fn AudioBookComponentBox(audiobook_with_data: AudiobookWithData) -> impl Int
             <p class="title is-4">{ title }</p>
             <AuthorLinks authors=authors />
             <ReaderLinks readers=readers />
+            <SeriesLink maybe_series=maybe_series />
         </div>
         </div>
 

@@ -1,4 +1,5 @@
 pub mod author_page;
+pub mod by_series_page;
 pub mod category_page;
 pub mod homepage;
 pub mod keyword_page;
