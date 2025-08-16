@@ -30,6 +30,7 @@ impl Default for User {
 }
 
 impl User {
+    #[must_use]
     pub fn is_guest(&self) -> bool {
         self.id == GUEST_USER_ID
     }

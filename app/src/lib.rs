@@ -52,21 +52,20 @@ pub async fn get_current_user() -> Result<Option<User>, ServerFnError> {
         debug!("Authsession available");
         let maybe_current_user = Ok(auth.current_user.clone().map(|v| v.into_user()));
         debug!("Maybe current_user: {:?}", maybe_current_user);
-        return maybe_current_user;
+        maybe_current_user
     } else {
         error!("Authsession not available");
-        return Err(ServerFnError::new("No auth context found."));
+        Err(ServerFnError::new("No auth context found."))
     }
 }
 
 #[component]
 pub fn App() -> impl IntoView {
+    use crate::ui_components::navbar::Navbar;
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
-    use crate::ui_components::navbar::Navbar;
-
-    let default_user: User = Default::default();
+    let default_user: User = User::default();
     let (get_user_signal, set_user_signal) = signal(default_user);
     provide_context(get_user_signal);
     provide_context(set_user_signal);

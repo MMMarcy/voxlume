@@ -2,6 +2,7 @@ use entities_lib::entities::user::User;
 use leptos::logging::error;
 use leptos::{html::Input, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_navigate;
+use leptos_router::NavigateOptions;
 
 #[server(LoginUser, "/api")]
 pub async fn login_user(
@@ -44,11 +45,11 @@ pub async fn login_user(
         Ok(sql_user) => {
             auth.login_user(sql_user.id);
             debug!("User {} successfully login", &sql_user.username);
-            return Ok(sql_user.into_user());
+            Ok(sql_user.into_user())
         }
         Err(err) => {
             error!("Error logging user in: {:?}", err);
-            return Err(ServerFnError::new("Couldn't log in users"));
+            Err(ServerFnError::new("Couldn't log in users"))
         }
     }
 }
@@ -121,12 +122,12 @@ pub fn LoginPage() -> impl IntoView {
             .await
             {
                 Ok(registered_user) => {
-                    let _ = &set_user_signal.set(registered_user);
-                    navigation("/", Default::default());
+                    let () = &set_user_signal.set(registered_user);
+                    navigation("/", NavigateOptions::default());
                 }
                 // TODO: Make this error surface also to the UI.
                 Err(err) => error!("{}", err),
-            };
+            }
         });
     };
     view! {

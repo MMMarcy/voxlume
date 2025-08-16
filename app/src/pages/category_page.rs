@@ -11,7 +11,7 @@ pub fn CategoryPage() -> impl IntoView {
     let section_title = move || {
         format!(
             "Audiobooks with category {}",
-            maybe_category().unwrap_or_else(|| "".into())
+            maybe_category().unwrap_or_else(String::new)
         )
     };
 

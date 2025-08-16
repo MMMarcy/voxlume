@@ -30,6 +30,9 @@ pub struct AppState {
 }
 
 impl AppState {
+    ///
+    /// # Errors
+    /// If it can't find the appstate.
     pub fn get_app_state() -> Result<AppState, ServerFnError> {
         if let Some(ctx) = use_context::<AppState>() {
             Ok(ctx)
@@ -39,6 +42,10 @@ impl AppState {
             ))
         }
     }
+
+    ///
+    /// # Errors
+    /// If the it can't find the database connection.
     pub fn get_database_connection_pool() -> Result<impl DbConnectionLike, ServerFnError> {
         if let Some(ctx) = use_context::<AppState>() {
             Ok(ctx.database_connection_pool)
@@ -48,6 +55,9 @@ impl AppState {
             ))
         }
     }
+
+    /// # Errors
+    /// If it can't get the neo4rs graph instance.
     pub fn get_neo4j_conn() -> Result<Graph, ServerFnError> {
         if let Some(graph) = use_context::<Graph>() {
             Ok(graph)
@@ -58,6 +68,8 @@ impl AppState {
         }
     }
 
+    /// # Errors
+    /// If it can't find the password handler.
     pub fn get_password_handler() -> Result<impl PasswordHandlerLike, ServerFnError> {
         if let Some(ctx) = use_context::<AppState>() {
             Ok(ctx.password_handler)

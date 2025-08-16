@@ -2,6 +2,7 @@ use entities_lib::entities::user::User;
 use leptos::logging::error;
 use leptos::{html::Input, prelude::*, task::spawn_local};
 use leptos_router::hooks::use_navigate;
+use leptos_router::NavigateOptions;
 
 #[server(RegisterUser, "/api")]
 pub async fn register_user(
@@ -37,7 +38,9 @@ pub async fn register_user(
 
     debug!(
         "Fn get_current_user: {:?}",
-        auth.current_user.clone().map(|u| u.into_user())
+        auth.current_user
+            .clone()
+            .map(shared::sql_user::SqlUser::into_user)
     );
 
     let local_user = SqlUser::create_local_user(username, &password, &argon2);
@@ -54,7 +57,7 @@ pub async fn register_user(
             error!("Error: {:?}", err);
         }
     }
-    Ok(Default::default())
+    Ok(User::default())
 }
 
 #[component]
@@ -133,12 +136,12 @@ pub fn RegisterPage() -> impl IntoView {
             .await
             {
                 Ok(registered_user) => {
-                    let _ = &set_user_signal.set(registered_user);
-                    navigation("/", Default::default());
+                    let () = &set_user_signal.set(registered_user);
+                    navigation("/", NavigateOptions::default());
                 }
                 // TODO: Make this error surface also to the UI.
                 Err(err) => error!("{}", err),
-            };
+            }
         });
     };
     view! {

@@ -190,22 +190,22 @@ async fn get_audiobooks_with_data_by_keyword(
     while let Ok(maybe_row) = result_stream.next().await {
         if let Some(row) = maybe_row {
             let audiobook: AudioBook = row.get("audiobook").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get audiobook: {}", e))
+                AppError::DeserializationError(format!("Failed to get audiobook: {e}"))
             })?;
             let authors: Vec<Author> = row.get("authors").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get authors: {}", e))
+                AppError::DeserializationError(format!("Failed to get authors: {e}"))
             })?;
             let categories: Vec<Category> = row.get("categories").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get categories: {}", e))
+                AppError::DeserializationError(format!("Failed to get categories: {e}"))
             })?;
             let keywords: Vec<Keyword> = row.get("keywords").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get keywords: {}", e))
+                AppError::DeserializationError(format!("Failed to get keywords: {e}"))
             })?;
             let readers: Vec<Reader> = row.get("readers").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get readers: {}", e))
+                AppError::DeserializationError(format!("Failed to get readers: {e}"))
             })?;
             let series: Option<Series> = row.get("series").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get series: {}", e))
+                AppError::DeserializationError(format!("Failed to get series: {e}"))
             })?;
 
             audiobooks_data.push((audiobook, authors, categories, keywords, readers, series));
@@ -267,13 +267,13 @@ async fn get_audiobooks_with_data_by_series(
                 AppError::DeserializationError(format!("Failed to get categories: {e}"))
             })?;
             let keywords: Vec<Keyword> = row.get("keywords").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get keywords: {}", e))
+                AppError::DeserializationError(format!("Failed to get keywords: {e}"))
             })?;
             let readers: Vec<Reader> = row.get("readers").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get readers: {}", e))
+                AppError::DeserializationError(format!("Failed to get readers: {e}"))
             })?;
             let series: Option<Series> = row.get("series").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get series: {}", e))
+                AppError::DeserializationError(format!("Failed to get series: {e}"))
             })?;
 
             audiobooks_data.push((audiobook, authors, categories, keywords, readers, series));
@@ -330,26 +330,26 @@ async fn get_audiobooks_with_data_by_reader(
         }
         let row = maybe_row.expect("Should be ok to extract the value");
 
-        let audiobook: AudioBook = row.get("audiobook").map_err(|e| {
-            AppError::DeserializationError(format!("Failed to get audiobook: {}", e))
-        })?;
+        let audiobook: AudioBook = row
+            .get("audiobook")
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get audiobook: {e}")))?;
 
         let authors: Vec<Author> = row
             .get("authors")
-            .map_err(|e| AppError::DeserializationError(format!("Failed to get authors: {}", e)))?;
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get authors: {e}")))?;
         let categories: Vec<Category> = row.get("categories").map_err(|e| {
-            AppError::DeserializationError(format!("Failed to get categories: {}", e))
+            AppError::DeserializationError(format!("Failed to get categories: {e}"))
         })?;
-        let keywords: Vec<Keyword> = row.get("keywords").map_err(|e| {
-            AppError::DeserializationError(format!("Failed to get keywords: {}", e))
-        })?;
+        let keywords: Vec<Keyword> = row
+            .get("keywords")
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get keywords: {e}")))?;
         let readers: Vec<Reader> = row
             .get("readers")
-            .map_err(|e| AppError::DeserializationError(format!("Failed to get readers: {}", e)))?;
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get readers: {e}")))?;
 
         let series: Option<Series> = row
             .get("series")
-            .map_err(|e| AppError::DeserializationError(format!("Failed to get series: {}", e)))?;
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get series: {e}")))?;
 
         audiobooks_data.push((audiobook, authors, categories, keywords, readers, series));
     }
@@ -402,26 +402,26 @@ async fn get_audiobooks_with_data_by_author(
         }
         let row = maybe_row.expect("Should be ok to extract the value");
 
-        // neo4rs can deserialize node properties into a struct
-        let audiobook: AudioBook = row.get("audiobook").map_err(|e| {
-            AppError::DeserializationError(format!("Failed to get audiobook: {}", e))
-        })?;
+        // Neo4rs can deserialize node properties into a struct
+        let audiobook: AudioBook = row
+            .get("audiobook")
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get audiobook: {e}")))?;
 
-        // neo4rs can deserialize a list of nodes into a Vec<Struct>
+        // Neo4rs can deserialize a list of nodes into a Vec<Struct>
         let authors: Vec<Author> = row
             .get("authors")
-            .map_err(|e| AppError::DeserializationError(format!("Failed to get authors: {}", e)))?;
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get authors: {e}")))?;
         let categories: Vec<Category> = row.get("categories").map_err(|e| {
-            AppError::DeserializationError(format!("Failed to get categories: {}", e))
+            AppError::DeserializationError(format!("Failed to get categories: {e}"))
         })?;
-        let keywords: Vec<Keyword> = row.get("keywords").map_err(|e| {
-            AppError::DeserializationError(format!("Failed to get keywords: {}", e))
-        })?;
+        let keywords: Vec<Keyword> = row
+            .get("keywords")
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get keywords: {e}")))?;
         let readers: Vec<Reader> = row
             .get("readers")
-            .map_err(|e| AppError::DeserializationError(format!("Failed to get readers: {}", e)))?;
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get readers: {e}")))?;
 
-        // For Option<Series>, if 'series' is null in the DB, .get() should produce a None variant correctly.
+        // For Option<Series>, if 'series' is null in the DB, ``.get()`` should produce a None variant correctly.
         let series: Option<Series> = row
             .get("series")
             .map_err(|e| AppError::DeserializationError(format!("Failed to get series: {e}")))?;
@@ -474,12 +474,12 @@ async fn get_most_recent_audiobooks_with_data(
         }
         let row = maybe_row.expect("Should be ok to extract the value");
 
-        // neo4rs can deserialize node properties into a struct
+        // Neo4rs can deserialize node properties into a struct
         let audiobook: AudioBook = row
             .get("audiobook")
             .map_err(|e| AppError::DeserializationError(format!("Failed to get audiobook: {e}")))?;
 
-        // neo4rs can deserialize a list of nodes into a Vec<Struct>
+        // Neo4rs can deserialize a list of nodes into a Vec<Struct>
         let authors: Vec<Author> = row
             .get("authors")
             .map_err(|e| AppError::DeserializationError(format!("Failed to get authors: {e}")))?;
@@ -493,7 +493,7 @@ async fn get_most_recent_audiobooks_with_data(
             .get("readers")
             .map_err(|e| AppError::DeserializationError(format!("Failed to get readers: {e}")))?;
 
-        // For Option<Series>, if 'series' is null in the DB, .get() should produce a None variant correctly.
+        // For Option<Series>, if 'series' is null in the DB, ``.get()`` should produce a None variant correctly.
         let series: Option<Series> = row
             .get("series")
             .map_err(|e| AppError::DeserializationError(format!("Failed to get series: {e}")))?;

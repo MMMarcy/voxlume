@@ -46,19 +46,19 @@ pub trait DbConnectionLike: Send + Sync {
     async fn insert_user(&self, user: SqlUser) -> Result<()>;
 }
 
-/// Implementation of `DbConnectionLike` for a PostgreSQL connection pool (`sqlx::PgPool`).
+/// Implementation of `DbConnectionLike` for a `PostgreSQL` connection pool (`sqlx::PgPool`).
 #[async_trait]
 impl DbConnectionLike for PgPool {
-    /// Fetches a user by username from the PostgreSQL database.
+    /// Fetches a user by username from the `PostgreSQL` database.
     /// Returns `None` if the user is not found or if a database error occurs during the query.
     #[instrument(skip_all)]
     async fn get_user_by_username(&self, username: &(impl AsRef<str> + Sync)) -> Option<SqlUser> {
         let get_user_result = sqlx::query_as::<_, SqlUser>(
-            r#"
+            r"
             SELECT *
             FROM users
             WHERE username = $1
-        "#,
+        ",
         )
         .bind(username.as_ref())
         .fetch_optional(self)
@@ -79,7 +79,7 @@ impl DbConnectionLike for PgPool {
         }
     }
 
-    /// Fetches a user by ID from the PostgreSQL database.
+    /// Fetches a user by ID from the `PostgreSQL` database.
     /// Handles the special case for `userid` 1, returning a default guest user.
     /// Otherwise, queries the database for the user ID.
     #[instrument(skip_all)]
@@ -90,17 +90,17 @@ impl DbConnectionLike for PgPool {
                 id: userid,
                 username: "Guest".to_string(),
                 anonymous: true,
-                password_mcf: "".to_string(),
+                password_mcf: String::new(),
                 last_access: chrono::Utc::now(),
             }));
         }
         debug!("Loading user with id {}", userid);
         sqlx::query_as::<_, SqlUser>(
-            r#"
+            r"
             SELECT *
             FROM users
             WHERE id = $1
-        "#,
+        ",
         )
         .bind(userid)
         .fetch_optional(self)
@@ -108,12 +108,12 @@ impl DbConnectionLike for PgPool {
         .map_err(|e| anyhow!(e)) // Maps sqlx::Error to anyhow::Error
     }
 
-    /// Inserts a new user record into the `users` table in the PostgreSQL database.
+    /// Inserts a new user record into the `users` table in the `PostgreSQL` database.
     /// Assumes the user is not anonymous (sets `anonymous` column to `false`).
     #[instrument(skip_all)]
     async fn insert_user(&self, user: SqlUser) -> Result<()> {
         sqlx::query(
-            r#"
+            r"
             INSERT INTO users (
                 username,
                 anonymous,
@@ -125,7 +125,7 @@ impl DbConnectionLike for PgPool {
                 $3,
                 $4
             );
-        "#,
+        ",
         )
         .bind(user.username)
         .bind(false) // Explicitly set anonymous to false for inserted users
@@ -150,7 +150,7 @@ mod tests {
             id: 0, // ID is usually set by the database
             username: username.to_string(),
             anonymous: false,
-            password_mcf: format!("mcf_for_{}", username),
+            password_mcf: format!("mcf_for_{username}"),
             last_access: Utc::now(),
         }
     }
@@ -223,7 +223,7 @@ mod tests {
 
     #[sqlx::test(migrations = "../model/migrations")]
     async fn test_get_user_by_id_not_found(pool: PgPool) -> Result<()> {
-        let non_existent_id = 999999;
+        let non_existent_id = 999_999;
         let fetched_user_opt_res = pool.get_user_by_id(non_existent_id).await;
 
         assert!(

@@ -12,7 +12,7 @@ pub fn AuthorPage() -> impl IntoView {
     let section_title = move || {
         format!(
             "Audiobooks by {}",
-            maybe_author().unwrap_or_else(|| "".into())
+            maybe_author().unwrap_or_else(String::new)
         )
     };
     unsafe {
@@ -20,7 +20,7 @@ pub fn AuthorPage() -> impl IntoView {
             <Title text=section_title />
             <div class="section">
                  <AudioBookCollectionContainer
-                    title=Signal::derive(move || section_title())
+                    title=Signal::derive(section_title)
                     request_type=Signal::derive(move || GetAudioBookRequestType::ByAuthor(Author {name: maybe_author().unwrap_unchecked()}, 0))
                 />
             </div>
