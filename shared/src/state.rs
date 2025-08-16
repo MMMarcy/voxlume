@@ -25,8 +25,7 @@ pub struct AppState {
     pub database_connection_pool: PgPool,
     pub routes: Vec<AxumRouteListing>,
     pub password_handler: Argon2<'static>,
-    pub cache:
-        Cache<(i64, GetAudioBookRequestType, u16, u16), Result<Vec<AudiobookWithData>, AppError>>,
+    pub cache: Cache<GetAudioBookRequestType, Result<Vec<AudiobookWithData>, AppError>>,
     pub shareable_args: ShareableArgsValues,
 }
 

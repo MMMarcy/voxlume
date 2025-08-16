@@ -21,7 +21,8 @@ pub fn ReaderPage() -> impl IntoView {
             <div class="section">
                  <AudioBookCollectionContainer
                     title=Signal::derive(move || section_title())
-                    request_type=Signal::derive(move || GetAudioBookRequestType::ByReader(Reader { name: maybe_reader().unwrap_unchecked()}))
+                    request_type=Signal::derive(move || GetAudioBookRequestType::ByReader(
+                Reader { name: maybe_reader().unwrap_unchecked()}, 0))
 
                 />
             </div>

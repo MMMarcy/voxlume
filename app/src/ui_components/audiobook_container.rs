@@ -8,7 +8,6 @@ use web_sys::TouchEvent;
 #[server(GetAudiobooks, "/api")]
 async fn get_audiobooks(
     request_type: GetAudioBookRequestType,
-    page: u16,
 ) -> Result<Vec<AudiobookWithData>, ServerFnError> {
     use shared::auth_user::AuthSession;
     use shared::graph_trait::get_audiobooks_cached;
@@ -29,16 +28,9 @@ async fn get_audiobooks(
         state.shareable_args.user_audiobooks_per_homepage_section
     };
     info!("Gotten here.");
-    get_audiobooks_cached(
-        &graph,
-        &cache,
-        Some(user_id),
-        request_type,
-        limit_audiobooks,
-        page,
-    )
-    .await
-    .map_err(|e| ServerFnError::new(format!("{:?}", e)))
+    get_audiobooks_cached(&graph, &cache, request_type, limit_audiobooks)
+        .await
+        .map_err(|e| ServerFnError::new(format!("{:?}", e)))
 }
 
 #[component]
@@ -53,7 +45,7 @@ pub fn AudioBookCollectionContainer(
 
     let get_audiobooks_resource = Resource::new(
         move || request_type,
-        move |current_request_type| get_audiobooks(current_request_type(), 0),
+        move |current_request_type| get_audiobooks(current_request_type()),
     );
 
     Effect::new(move || {

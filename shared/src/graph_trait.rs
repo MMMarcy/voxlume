@@ -1,6 +1,6 @@
 use entities_lib::{
-    entities::user::GUEST_USER_ID, AudioBook, AudiobookWithData, Author, Category,
-    GetAudioBookRequestType, Keyword, Reader, Series,
+    AudioBook, AudiobookWithData, Author, Category, GetAudioBookRequestType, Keyword, Reader,
+    Series,
 };
 use neo4rs::{query, Error as Neo4rsError, Graph};
 use tracing::{instrument, trace};
@@ -21,49 +21,68 @@ impl From<Neo4rsError> for AppError {
     }
 }
 
+/// .
+///
+/// # Errors
+///
+/// This function will return an error if.
 #[instrument(skip_all)]
 pub async fn get_audiobooks_cached(
     graph: &Graph,
-    cache: &Cache<
-        (i64, GetAudioBookRequestType, u16, u16),
-        Result<Vec<AudiobookWithData>, AppError>,
-    >,
-    maybe_user_id: Option<i64>,
+    cache: &Cache<GetAudioBookRequestType, Result<Vec<AudiobookWithData>, AppError>>,
     request_type: GetAudioBookRequestType,
     limit: u16,
-    page: u16,
 ) -> Result<Vec<AudiobookWithData>, AppError> {
-    let user_id = maybe_user_id.unwrap_or(GUEST_USER_ID);
-    let cache_key = (user_id, request_type.clone(), limit, page);
+    let cache_key = request_type.clone();
     let res = match request_type {
-        GetAudioBookRequestType::MostRecent => {
+        GetAudioBookRequestType::MostRecent(page) => {
             cache
                 .get_with(cache_key, async {
                     get_most_recent_audiobooks_with_data(graph, limit, page).await
                 })
                 .await
         }
-        GetAudioBookRequestType::ByAuthor(author) => {
-            get_audiobooks_with_data_by_author(graph, author, limit, page).await
+        GetAudioBookRequestType::ByAuthor(author, page) => {
+            cache
+                .get_with(cache_key, async {
+                    get_audiobooks_with_data_by_author(graph, author, limit, page).await
+                })
+                .await
         }
-        GetAudioBookRequestType::ByReader(reader) => {
-            get_audiobooks_with_data_by_reader(graph, reader, limit, page).await
+        GetAudioBookRequestType::ByReader(reader, page) => {
+            cache
+                .get_with(cache_key, async {
+                    get_audiobooks_with_data_by_reader(graph, reader, limit, page).await
+                })
+                .await
         }
-        GetAudioBookRequestType::ByCategory(category) => {
-            get_audiobooks_with_data_by_category(graph, category, limit, page).await
+        GetAudioBookRequestType::ByCategory(category, page) => {
+            cache
+                .get_with(cache_key, async {
+                    get_audiobooks_with_data_by_category(graph, category, limit, page).await
+                })
+                .await
         }
-        GetAudioBookRequestType::ByKeyword(keyword) => {
-            get_audiobooks_with_data_by_keyword(graph, keyword, limit, page).await
+        GetAudioBookRequestType::ByKeyword(keyword, page) => {
+            cache
+                .get_with(cache_key, async {
+                    get_audiobooks_with_data_by_keyword(graph, keyword, limit, page).await
+                })
+                .await
         }
-        GetAudioBookRequestType::BySeries(series) => {
-            get_audiobooks_with_data_by_series(graph, series, limit, page).await
+        GetAudioBookRequestType::BySeries(series, page) => {
+            cache
+                .get_with(cache_key, async {
+                    get_audiobooks_with_data_by_series(graph, series, limit, page).await
+                })
+                .await
         }
     };
     res
 }
 
 #[instrument(skip_all)]
-pub async fn get_audiobooks_with_data_by_category(
+async fn get_audiobooks_with_data_by_category(
     graph: &Graph,
     category: Category,
     limit: u16,
@@ -103,22 +122,22 @@ pub async fn get_audiobooks_with_data_by_category(
     while let Ok(maybe_row) = result_stream.next().await {
         if let Some(row) = maybe_row {
             let audiobook: AudioBook = row.get("audiobook").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get audiobook: {}", e))
+                AppError::DeserializationError(format!("Failed to get audiobook: {e}"))
             })?;
             let authors: Vec<Author> = row.get("authors").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get authors: {}", e))
+                AppError::DeserializationError(format!("Failed to get authors: {e}"))
             })?;
             let categories: Vec<Category> = row.get("categories").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get categories: {}", e))
+                AppError::DeserializationError(format!("Failed to get categories: {e}"))
             })?;
             let keywords: Vec<Keyword> = row.get("keywords").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get keywords: {}", e))
+                AppError::DeserializationError(format!("Failed to get keywords: {e}"))
             })?;
             let readers: Vec<Reader> = row.get("readers").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get readers: {}", e))
+                AppError::DeserializationError(format!("Failed to get readers: {e}"))
             })?;
             let series: Option<Series> = row.get("series").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get series: {}", e))
+                AppError::DeserializationError(format!("Failed to get series: {e}"))
             })?;
 
             audiobooks_data.push((audiobook, authors, categories, keywords, readers, series));
@@ -131,7 +150,7 @@ pub async fn get_audiobooks_with_data_by_category(
 }
 
 #[instrument(skip_all)]
-pub async fn get_audiobooks_with_data_by_keyword(
+async fn get_audiobooks_with_data_by_keyword(
     graph: &Graph,
     keyword: Keyword,
     limit: u16,
@@ -199,7 +218,7 @@ pub async fn get_audiobooks_with_data_by_keyword(
 }
 
 #[instrument(skip_all)]
-pub async fn get_audiobooks_with_data_by_series(
+async fn get_audiobooks_with_data_by_series(
     graph: &Graph,
     series: Series,
     limit: u16,
@@ -239,13 +258,13 @@ pub async fn get_audiobooks_with_data_by_series(
     while let Ok(maybe_row) = result_stream.next().await {
         if let Some(row) = maybe_row {
             let audiobook: AudioBook = row.get("audiobook").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get audiobook: {}", e))
+                AppError::DeserializationError(format!("Failed to get audiobook: {e}"))
             })?;
             let authors: Vec<Author> = row.get("authors").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get authors: {}", e))
+                AppError::DeserializationError(format!("Failed to get authors: {e}"))
             })?;
             let categories: Vec<Category> = row.get("categories").map_err(|e| {
-                AppError::DeserializationError(format!("Failed to get categories: {}", e))
+                AppError::DeserializationError(format!("Failed to get categories: {e}"))
             })?;
             let keywords: Vec<Keyword> = row.get("keywords").map_err(|e| {
                 AppError::DeserializationError(format!("Failed to get keywords: {}", e))
@@ -267,7 +286,7 @@ pub async fn get_audiobooks_with_data_by_series(
 }
 
 #[instrument(skip_all)]
-pub async fn get_audiobooks_with_data_by_reader(
+async fn get_audiobooks_with_data_by_reader(
     graph: &Graph,
     reader: Reader,
     limit: u16,
@@ -339,7 +358,7 @@ pub async fn get_audiobooks_with_data_by_reader(
 }
 
 #[instrument(skip_all)]
-pub async fn get_audiobooks_with_data_by_author(
+async fn get_audiobooks_with_data_by_author(
     graph: &Graph,
     author: Author,
     limit: u16,
@@ -405,7 +424,7 @@ pub async fn get_audiobooks_with_data_by_author(
         // For Option<Series>, if 'series' is null in the DB, .get() should produce a None variant correctly.
         let series: Option<Series> = row
             .get("series")
-            .map_err(|e| AppError::DeserializationError(format!("Failed to get series: {}", e)))?;
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get series: {e}")))?;
 
         audiobooks_data.push((audiobook, authors, categories, keywords, readers, series));
     }
@@ -456,28 +475,28 @@ async fn get_most_recent_audiobooks_with_data(
         let row = maybe_row.expect("Should be ok to extract the value");
 
         // neo4rs can deserialize node properties into a struct
-        let audiobook: AudioBook = row.get("audiobook").map_err(|e| {
-            AppError::DeserializationError(format!("Failed to get audiobook: {}", e))
-        })?;
+        let audiobook: AudioBook = row
+            .get("audiobook")
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get audiobook: {e}")))?;
 
         // neo4rs can deserialize a list of nodes into a Vec<Struct>
         let authors: Vec<Author> = row
             .get("authors")
-            .map_err(|e| AppError::DeserializationError(format!("Failed to get authors: {}", e)))?;
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get authors: {e}")))?;
         let categories: Vec<Category> = row.get("categories").map_err(|e| {
-            AppError::DeserializationError(format!("Failed to get categories: {}", e))
+            AppError::DeserializationError(format!("Failed to get categories: {e}"))
         })?;
-        let keywords: Vec<Keyword> = row.get("keywords").map_err(|e| {
-            AppError::DeserializationError(format!("Failed to get keywords: {}", e))
-        })?;
+        let keywords: Vec<Keyword> = row
+            .get("keywords")
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get keywords: {e}")))?;
         let readers: Vec<Reader> = row
             .get("readers")
-            .map_err(|e| AppError::DeserializationError(format!("Failed to get readers: {}", e)))?;
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get readers: {e}")))?;
 
         // For Option<Series>, if 'series' is null in the DB, .get() should produce a None variant correctly.
         let series: Option<Series> = row
             .get("series")
-            .map_err(|e| AppError::DeserializationError(format!("Failed to get series: {}", e)))?;
+            .map_err(|e| AppError::DeserializationError(format!("Failed to get series: {e}")))?;
 
         audiobooks_data.push((audiobook, authors, categories, keywords, readers, series));
     }

@@ -1,6 +1,5 @@
 use crate::ui_components::audiobook_container::AudioBookCollectionContainer;
 use entities_lib::{GetAudioBookRequestType, Keyword};
-use leptos::logging;
 use leptos::prelude::*;
 use leptos::Params;
 use leptos_meta::Title;
@@ -30,7 +29,7 @@ pub fn KeywordPage() -> impl IntoView {
         <div class="section">
              <AudioBookCollectionContainer
                 title=Signal::derive(move || format!("Audiobooks with keyword {}", keyword()))
-                request_type=Signal::derive(move || GetAudioBookRequestType::ByKeyword(Keyword {value: keyword()}))
+                request_type=Signal::derive(move || GetAudioBookRequestType::ByKeyword(Keyword {value: keyword()}, 0))
             />
         </div>
     }

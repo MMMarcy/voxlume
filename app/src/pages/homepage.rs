@@ -10,7 +10,7 @@ pub fn HomePage() -> impl IntoView {
         <div class="section">
              <AudioBookCollectionContainer
                 title=Signal::derive(move || String::from("Most recent"))
-                request_type=Signal::derive(move || GetAudioBookRequestType::MostRecent)
+                request_type=Signal::derive(move || GetAudioBookRequestType::MostRecent(0))
             />
         </div>
     }

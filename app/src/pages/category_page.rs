@@ -23,7 +23,7 @@ pub fn CategoryPage() -> impl IntoView {
         <div class="section">
              <AudioBookCollectionContainer
                 title=Signal::derive(section_title)
-                request_type=Signal::derive(move || GetAudioBookRequestType::ByCategory(Category {value: maybe_category().unwrap()}))
+                request_type=Signal::derive(move || GetAudioBookRequestType::ByCategory(Category {value: maybe_category().unwrap()}, 0))
             />
         </div>
     }
