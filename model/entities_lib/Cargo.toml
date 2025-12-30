@@ -1,0 +1,29 @@
+[package]
+name = "entities_lib"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+clap = { workspace = true, optional = true }
+cfg-if = { workspace = true }
+chrono = { workspace = true, features = ["serde"] }
+derive_more.workspace = true
+futures.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx = { workspace = true, optional = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+googletest = { workspace = true }
+test-log = { workspace = true }
+tokio = { workspace = true, features = ["macros", "test-util"] }
+
+[features]
+default = []
+ssr = ["dep:sqlx", "dep:clap"]
+hydrate = []

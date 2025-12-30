@@ -1,0 +1,34 @@
+[package]
+name = "cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+hydrate = []
+ssr = []
+
+[dependencies]
+entities_lib = { path = "../model/entities_lib", features = ["ssr"] }
+shared = { path = "../shared" }
+
+clap = { workspace = true }
+gemini-rust = { workspace = true }
+pgmq = { workspace = true }
+reqwest = { workspace = true }
+scraper = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+url = { workspace = true }
+
+
+[dev-dependencies]
+googletest = { workspace = true }
+test-log = { workspace = true }
+tokio = { workspace = true, features = ["macros", "test-util"] }
+wiremock = "0.6"

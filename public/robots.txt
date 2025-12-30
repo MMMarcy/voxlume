@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /most-recent/
+Allow: /author/
+Allow: /reader/
+Allow: /category/
+Allow: /keyword/
+Allow: /series/
+Allow: /audiobook/
+Allow: /about/
+
+Disallow: /notifications
+Disallow: /manage/subscriptions
+Disallow: /register
+Disallow: /login
+Disallow: /logout
+Disallow: /search/
+Disallow: /api/

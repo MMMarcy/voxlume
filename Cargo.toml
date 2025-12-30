@@ -1,0 +1,169 @@
+cargo-features = ["codegen-backend", "profile-rustflags"]
+
+[workspace]
+resolver = "2"
+members = ["app", "cli", "frontend", "model/entities_lib", "server", "shared"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+
+# ==========================================
+#  PROFILE CONFIGURATION
+# ==========================================
+
+# 1. BASE DEV PROFILE (WASM-Safe)
+# This profile is used by the Frontend/WASM.
+# It must NOT use Cranelift or Mold, as they don't support wasm32 targets well.
+[profile.dev]
+opt-level = 0
+debug = 1           # Line tables only (faster than full debug info)
+strip = "debuginfo" # Strip symbols from binary to speed up I/O
+incremental = true
+panic = "abort"     # slightly faster compilation, cleaner wasm
+
+# 2. SERVER DEV PROFILE (Turbocharged)
+# This profile is used ONLY by the Server binary.
+[profile.server-dev]
+inherits = "dev"
+codegen-backend = "cranelift"
+rustflags = [
+  "-C",
+  "link-arg=-fuse-ld=mold",         # Use Mold linker (Fastest on Linux)
+  "-C",
+  "link-arg=-fdebug-types-section",
+  "-C",
+  "split-debuginfo=unpacked",       # Keeps debug info in .o files (massive link speedup)
+]
+
+# 3. DEPENDENCY OPTIMIZATION
+# Dependencies are compiled with high optimization but NO debug info.
+# This drastically reduces the work the linker has to do.
+[profile.dev.package."*"]
+opt-level = 3
+debug = 0
+strip = "debuginfo"
+
+# 4. SERVER DEPENDENCY INHERITANCE
+# Ensure the server profile also benefits from fast dependencies
+[profile.server-dev.package."*"]
+opt-level = 3
+debug = 0
+strip = "debuginfo"
+
+# 5. BUILD SCRIPT OPTIMIZATION
+# Makes macros (SQLx, Leptos, etc) run faster
+[profile.dev.build-override]
+opt-level = 3
+[profile.server-dev.build-override]
+opt-level = 3
+
+# 6. RELEASE PROFILES
+[profile.release]
+codegen-units = 16
+# lto = "off"
+opt-level = 'z'
+strip = true
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = 3
+# lto = "thin"
+codegen-units = 16
+panic = "abort"
+
+# ==========================================
+#  DEPENDENCIES
+# ==========================================
+
+[workspace.dependencies]
+leptos = { version = "0.8", features = ["nightly"] }
+leptos_macro = { version = "0.8" }
+leptos_meta = { version = "0.8" }
+leptos_router = { version = "0.8", features = ["nightly"] }
+leptos_axum = { version = "0.8" }
+
+anyhow = { version = "*" }
+async-trait = { version = "*" }
+argon2 = { version = "*" }
+axum = { version = "0.8", features = ["macros"] }
+axum_session = { version = "=0.17.1" }
+axum_session_auth = { version = "=0.17.0" }
+axum_session_sqlx = { version = "=0.6.0" }
+bytes = { version = "1.8.0" }
+cfg-if = { version = "*" }
+chrono = { version = "0.4.39" }
+clap = { version = "*" }
+console_error_panic_hook = "0.1"
+console_log = "1"
+derive_more = { version = "*", features = ["from"] }
+futures = { version = "*" }
+futures-util = { version = "*" }
+gemini-rust = { version = "*" }
+googletest = { version = "*" }
+hex-literal = { version = "*" }
+http = { version = "*" }
+log = "0.4"
+moka = { version = "0.12", features = ["future"] }
+ndarray = { version = "*" }
+ndarray-linalg = { version = "*" }
+password-hash = { version = "*" }
+pgmq = { version = "*" }
+pgvector = { version = "*" }
+rand = "0.9"
+reqwest = { version = "*", features = ["json"] }
+scraper = { version = "*" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "*" }
+serial_test = { version = "3.2.0" }
+sqlx = { version = "0.8", features = [
+  "runtime-tokio",
+  "tls-native-tls",
+  "derive",
+  "macros",
+] }
+strum = { version = "*" }
+strum_macros = { version = "*" }
+strfmt = { version = "*" }
+test-log = { version = "*" }
+thiserror = { version = "*" }
+tokio = { version = "1", features = ["full"] }
+tower = { version = "0.5", features = ["full"] }
+tower-http = { version = "0.6", features = ["full"] }
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
+url = { version = "*" }
+uuid = { version = "*", features = ["v7", "fast-rng"] }
+wasm-bindgen = "=0.2.105"
+web-sys = { version = "*" }
+
+# ==========================================
+#  LEPTOS METADATA
+# ==========================================
+
+[[workspace.metadata.leptos]]
+name = "voxlume"
+hash-files = false
+bin-package = "server"
+lib-package = "frontend"
+
+# --- PROFILE MAPPING ---
+bin-profile-dev = "server-dev"       # Server uses the fast profile
+lib-profile-release = "wasm-release"
+
+site-root = "target/site"
+site-pkg-dir = "pkg"
+style-file = "style/main.scss"
+assets-dir = "public"
+site-addr = "0.0.0.0:3000"
+reload-port = 3001
+end2end-cmd = "npx playwright test"
+end2end-dir = "end2end"
+browserquery = "defaults"
+watch = false
+env = "DEV"
+bin-features = ["ssr"]
+bin-default-features = false
+lib-features = ["hydrate"]
+lib-default-features = false

@@ -1,0 +1,172 @@
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - VPN_SERVICE_PROVIDER=nordvpn
+      - VPN_TYPE=openvpn # or wireguard
+      - OPENVPN_USER=${OPENVPN_USER}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+      - OPENVPN_PROTOCOL=tcp
+      - OPENVPN_MSSFIX=1280
+      - SERVER_COUNTRIES="United States"
+      - FIREWALL_OUTBOUND_SUBNETS=172.16.0.0/12
+    networks:
+      - app_network
+    restart: always
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared_tunnel
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - app
+    networks:
+      - app_network
+
+  postgres:
+    container_name: postgres_container
+    image: ${POSTGRES_IMAGE}
+    user: root
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - ./docker_volumes/postgres:/var/lib/postgresql/data
+      # ports:
+      # - "${POSTGRES_PORT:-5432}:5432"
+    restart: always
+    networks:
+      - app_network
+
+  pgmq:
+    container_name: pgmq_container
+    image: ${PGMQ_IMAGE}
+    user: root
+    environment:
+      - POSTGRES_DATABASE=${PGMQ_DATABASE}
+      - POSTGRES_USER=${PGMQ_USER}
+      - POSTGRES_PASSWORD=${PGMQ_PASSWORD}
+    volumes:
+      - ./docker_volumes/pgmq:/var/lib/postgresql/data
+      # ports:
+      # - "${PGMQ_PORT:-5433}:5432"
+    restart: always
+    networks:
+      - app_network
+
+  cli_scrape:
+    container_name: voxlume_cli_scrape
+    image: ${DOCKERHUB_USERNAME}/voxlume-cli:latest
+    restart: always
+    # --- 2. Change Networking Mode ---
+    network_mode: service:gluetun
+    # DO NOT put 'networks' or 'ports' here.
+    # It inherits the network stack of gluetun.
+    depends_on:
+      - gluetun
+      - postgres
+      - pgmq
+    environment:
+      - RUST_LOG=INFO
+    command: [
+        "cli",
+        # Because gluetun is on app_network, "postgres" hostname still resolves
+        "--postgres-url=postgres:${POSTGRES_PORT:-5432}",
+        "--postgres-password=${POSTGRES_PASSWORD}",
+        "--pgmq-url=pgmq:5432",
+        "--pgmq-password=${PGMQ_PASSWORD}",
+        "--pgmq-database=${PGMQ_DATABASE}",
+        "--pgmq-username=${PGMQ_USER}",
+        "--gemini-api-key=${GEMINI_API_KEY}",
+        "--hardcover-api-key=${HARDCOVER_API_KEY}",
+        "--environment=prod",
+        "scrape",
+        "latest",
+      ]
+
+  cli_send_notifications:
+    container_name: voxlume_cli_send_notifications
+    image: ${DOCKERHUB_USERNAME}/voxlume-cli:latest
+    restart: always
+    depends_on:
+      - postgres
+      - pgmq
+    networks:
+      - app_network
+    environment:
+      - RUST_LOG=INFO
+    command:
+      [
+        "cli",
+        "--postgres-url=postgres:${POSTGRES_PORT:-5432}",
+        "--postgres-password=${POSTGRES_PASSWORD}",
+        "--pgmq-url=pgmq:5432",
+        "--pgmq-password=${PGMQ_PASSWORD}",
+        "--pgmq-database=${PGMQ_DATABASE}",
+        "--pgmq-username=${PGMQ_USER}",
+        "--gemini-api-key=${GEMINI_API_KEY}",
+        "--hardcover-api-key=${HARDCOVER_API_KEY}",
+        "--environment=prod",
+        "send-notifications",
+      ]
+
+  cli_refresh_index:
+    container_name: voxlume_cli_refresh_index
+    image: ${DOCKERHUB_USERNAME}/voxlume-cli:latest
+    restart: always
+    depends_on:
+      - postgres
+      - pgmq
+    networks:
+      - app_network
+    environment:
+      - RUST_LOG=INFO
+    command:
+      [
+        "cli",
+        "--postgres-url=postgres:${POSTGRES_PORT:-5432}",
+        "--postgres-password=${POSTGRES_PASSWORD}",
+        "--pgmq-url=pgmq:5432",
+        "--pgmq-password=${PGMQ_PASSWORD}",
+        "--pgmq-database=${PGMQ_DATABASE}",
+        "--pgmq-username=${PGMQ_USER}",
+        "--gemini-api-key=${GEMINI_API_KEY}",
+        "--hardcover-api-key=${HARDCOVER_API_KEY}",
+        "--environment=prod",
+        "refresh-search-index",
+      ]
+
+  app:
+    container_name: voxlume_app
+    image: ${DOCKERHUB_USERNAME}/voxlume-app:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    networks:
+      - app_network
+    command:
+      [
+        "./server",
+        "--postgres-url=postgres:${POSTGRES_PORT:-5432}",
+        "--postgres-password=${POSTGRES_PASSWORD}",
+        "--pgmq-url=pgmq:${PGMQ_PORT:-5433}",
+        "--pgmq-password=${PGMQ_PASSWORD}",
+        "--gemini-api-key=${GEMINI_API_KEY}",
+        "--hardcover-api-key=${HARDCOVER_API_KEY}",
+        "--environment=prod",
+      ]
+    environment:
+      - LEPTOS_SITE_ADDR=0.0.0.0:3000
+
+networks:
+  app_network:
+    driver: bridge

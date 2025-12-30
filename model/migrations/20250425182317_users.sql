@@ -1,0 +1,8 @@
+-- Add migration script here
+CREATE TABLE IF NOT EXISTS users (
+id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+username TEXT UNIQUE NOT NULL,
+anonymous BOOLEAN NOT NULL,
+password_mcf TEXT NOT NULL,
+last_access TIMESTAMP WITH TIME ZONE NOT NULL
+) ;

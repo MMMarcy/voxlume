@@ -1,0 +1,29 @@
+services:
+  postgres:
+    container_name: postgres_container
+    image: ${POSTGRES_IMAGE}
+    user: root
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - ./docker_volumes/postgres:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    restart: always
+
+  pgmq:
+    container_name: pgmq_container
+    image: ${PGMQ_IMAGE}
+    user: root
+    environment:
+      - POSTGRES_DATABASE=${PGMQ_DATABASE}
+      - POSTGRES_USER=${PGMQ_USER}
+      - POSTGRES_PASSWORD=${PGMQ_PASSWORD}
+    volumes:
+      - ./docker_volumes/pgmq:/var/lib/postgresql/data
+    command: ["-p", "${PGMQ_PORT}"]
+    ports:
+      - "${PGMQ_PORT}:${PGMQ_PORT}"
+    restart: always

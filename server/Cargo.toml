@@ -1,0 +1,56 @@
+[package]
+name = "server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+app = { path = "../app", default-features = false, features = ["ssr"] }
+shared = { path = "../shared", default-features = false, features = [] }
+entities_lib = { path = "../model/entities_lib", default-features = false, features = [
+  "ssr",
+] }
+
+
+leptos = { workspace = true }
+leptos_meta = { workspace = true }
+leptos_router = { workspace = true }
+leptos_axum = { workspace = true }
+
+anyhow = { workspace = true }
+argon2 = { workspace = true }
+axum = { workspace = true, features = ["macros"] }
+axum_session = { workspace = true }
+axum_session_auth = { workspace = true }
+axum_session_sqlx = { workspace = true }
+bytes = { workspace = true }
+cfg-if = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+chrono = { workspace = true }
+console_error_panic_hook = { workspace = true }
+futures-util = { workspace = true }
+gemini-rust = { workspace = true }
+hex-literal = { workspace = true }
+http = { workspace = true }
+moka = { workspace = true }
+password-hash = { workspace = true }
+rand = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+strfmt = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["json"] }
+wasm-bindgen = { workspace = true }
+web-sys = { workspace = true }
+
+[features]
+default = []
+ssr = []

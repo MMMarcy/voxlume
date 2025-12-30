@@ -1,0 +1,5 @@
+.git/
+.env
+docker_volumes/
+target/
+

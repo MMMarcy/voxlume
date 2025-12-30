@@ -1,0 +1,4 @@
+brace_style = "PreferSameLine"
+imports_granularity = "Module"
+indent_style = "Block"
+reorder_imports = true

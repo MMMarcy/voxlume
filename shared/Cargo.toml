@@ -1,0 +1,50 @@
+# Module that contains all the implementations that are used only by
+# the server. Specifically, only when compiling using `ssr` feature.
+[package]
+name = "shared"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+
+[dependencies]
+
+entities_lib = { path = "../model/entities_lib", default-features = false, features = [
+  "ssr",
+] }
+leptos = { workspace = true, features = ["ssr"] }
+leptos_axum = { workspace = true }
+leptos_router = { workspace = true }
+
+anyhow = { workspace = true }
+argon2 = { workspace = true }
+async-trait = { workspace = true }
+axum = { workspace = true, features = ["macros"] }
+axum_session = { workspace = true }
+axum_session_auth = { workspace = true }
+axum_session_sqlx = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+chrono = { workspace = true }
+futures-util = { workspace = true }
+gemini-rust = { workspace = true }
+moka = { workspace = true }
+ndarray = { workspace = true }
+ndarray-linalg = { workspace = true }
+password-hash = { workspace = true }
+pgmq = { workspace = true }
+pgvector = { workspace = true }
+rand = { workspace = true }
+reqwest = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
+sqlx = { workspace = true }
+strfmt = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[dev-dependencies]
+serial_test = { workspace = true }
+tokio = { workspace = true }
+# [dev-dependencies]
+# serial-test = { workspace = true }

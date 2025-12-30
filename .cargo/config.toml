@@ -1,0 +1,26 @@
+[profile.dev]
+opt-level = 0
+debug = false
+lto = "off"
+strip = "debuginfo"
+
+[profile.dev.package."*"]
+debug = 0
+opt-level = 3
+strip = "debuginfo"
+
+# [unstable]
+# codegen-backend = true
+#
+# [profile.server-dev]
+# codegen-backend = "cranelift"
+#
+# [target.x86_64-unknown-linux-gnu]
+# rustflags = [
+#   "-Zcodegen-backend=cranelift",
+#   "-C",
+#   "link-arg=-fdebug-types-section",
+#   "-C",
+#   "link-arg=-fuse-ld=mold",
+# ]
+# linker = "clang"

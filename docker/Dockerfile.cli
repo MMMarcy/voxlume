@@ -1,0 +1,31 @@
+FROM rust:1.91-trixie as builder
+
+WORKDIR /app
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+# Build the CLI
+# rust-toolchain.toml will handle the toolchain version automatically
+RUN cargo build --release --bin cli
+
+# Runtime stage
+FROM debian:trixie-slim as runtime
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/target/release/cli /usr/local/bin/cli
+
+CMD ["cli"]
+

@@ -1,0 +1,64 @@
+[package]
+name = "app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+leptos.workspace = true
+leptos_meta.workspace = true
+leptos_router.workspace = true
+leptos_axum = { workspace = true, optional = true }
+
+
+argon2 = { workspace = true, optional = true }
+axum_session = { workspace = true, optional = true }
+axum_session_auth = { workspace = true, optional = true }
+axum_session_sqlx = { workspace = true, optional = true }
+entities_lib = { path = "../model/entities_lib", optional = true }
+chrono = { workspace = true, optional = true }
+wasm-bindgen = { workspace = true, optional = true }
+web-sys = { workspace = true, optional = true, features = [
+  "Document",
+  "Element",
+  "HtmlElement",
+  # "LocalStorage",
+  "Storage",
+  "Window",
+] }
+shared = { path = "../shared", default-features = false, optional = true }
+sqlx = { workspace = true, optional = true }
+http.workspace = true
+cfg-if.workspace = true
+tracing = { workspace = true, optional = true }
+thiserror.workspace = true
+tokio = { workspace = true, optional = true }
+
+[features]
+default = []
+hydrate = [
+  "dep:web-sys",
+  "entities_lib/hydrate",
+  "dep:chrono",
+  "dep:wasm-bindgen",
+]
+ssr = [
+  "dep:chrono",
+  "dep:argon2",
+  "dep:axum_session",
+  "dep:axum_session_auth",
+  "dep:axum_session_sqlx",
+  "dep:leptos_axum",
+  "dep:shared",
+  "dep:sqlx",
+  "dep:tokio",
+  "dep:tracing",
+  "dep:wasm-bindgen",
+  "dep:web-sys",
+  "entities_lib/ssr",
+  "leptos/ssr",
+  "leptos_meta/ssr",
+  "leptos_router/ssr",
+]

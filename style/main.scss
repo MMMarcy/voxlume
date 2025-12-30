@@ -1,0 +1,349 @@
+@import "bulma/utilities/initial-variables";
+@import "bulma/utilities/derived-variables.scss";
+@import "bulma/utilities/css-variables.scss";
+@import "bulma/utilities/functions";
+
+@import "bulma";
+
+a.navbar-item[aria-current]:not([aria-current="false"]) {
+  color: hsl($navbar-item-selected-h,
+      $navbar-item-selected-s,
+      $navbar-item-selected-color-l );
+  background-color: hsl($navbar-item-selected-h,
+      $navbar-item-selected-s,
+      $navbar-item-selected-background-l );
+}
+
+.card {
+  box-shadow: 0 0;
+  --bulma-card-radius: 0;
+  border: 1px solid $primary;
+  padding: 1px;
+}
+
+/* Ensure your Bulma columns are set up correctly */
+// .columns {
+//   display: flex;
+// }
+
+.overlow_x_visible {
+  overflow-x: scroll;
+}
+
+/* Apply flex properties to the card itself */
+.card.is-equal-height-card {
+  height: 100%;
+  /* Make the card take full height of its column parent */
+  display: flex;
+  flex-direction: column;
+  /* Arrange card content vertically */
+}
+
+/* Optional: If you have a card-footer and want it always at the bottom */
+.card.is-equal-height-card .card-footer {
+  margin-top: auto;
+  /* Pushes the footer to the bottom */
+}
+
+/*
+   You might also need to adjust the image height if the 4by3 aspect ratio
+   is causing issues with differing content. You could set a max-height
+   or fixed height for the image container, but be mindful of aspect ratio distortion.
+*/
+figure.image img {
+  /* Example: If you want a fixed height for all images */
+  object-fit: contain;
+  /* max-height: 200px; */
+  /* overflow: hidden; */
+}
+
+// TODO: Make this responsive
+@media screen and (min-width: 1408px) {
+  .column.is-one-sixth {
+    flex: none;
+    width: 16%;
+  }
+}
+
+.has-notification-dot {
+  position: relative;
+}
+
+.notification-dot {
+  position: absolute;
+  top: 16px;
+  /* Adjust for vertical position */
+  right: 4px;
+  /* Adjust for horizontal position */
+  width: 8px;
+  height: 8px;
+  background-color: red;
+  border-radius: 50%;
+}
+
+.auth-box {
+  transition: box-shadow 0.3s ease;
+
+  // Default (Light Mode): Deep, dark shadow
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+
+  // Dark Mode: Lighter shadow (subtle glow)
+  // Note: Adjust the selector below to match what your ThemeSwitcher sets (e.g. .dark-mode, [data-theme="dark"])
+  [data-theme="dark"] & {
+    box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+  }
+
+  // Optional: Support system preference if your app supports it
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) & {
+      box-shadow: 0 8px 24px rgba(255, 255, 255, 0.15);
+    }
+  }
+}
+
+// --- Global Sidebar Button Styles ---
+.sidebar-toggle-button {
+  width: 2.5rem;
+  /* Make it square */
+  height: 2.5rem;
+  /* Make it square */
+  opacity: 0.7;
+  /* Add some opacity */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 4px;
+  /* Slightly rounded corners */
+  background-color: transparent;
+  /* Remove background */
+
+  &:hover {
+    opacity: 1;
+    /* Full opacity on hover */
+  }
+}
+
+// --- Mobile Sidebar Styles ---
+@media screen and (max-width: 1023px) {
+
+  // We add a class .sidebar-column to the column containing ExplorerSidebar
+  .sidebar-column {
+    z-index: 40; // High enough to overlay content
+    margin: 0 !important; // Reset column margins
+
+    // Smooth transition for opening/closing
+    transition:
+      width 0.3s ease,
+      background-color 0.3s ease;
+
+    // Collapsed State (Just the button)
+    &.is-narrow {
+      width: auto !important;
+      background-color: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+      height: auto;
+      position: relative; // Take vertical space
+      padding: 0.5rem;
+
+      .sidebar-toggle-button {
+        margin-left: 0.5rem; // Add left margin on mobile for the collapsed button
+      }
+    }
+
+    // Expanded State (Overlay Menu)
+    &:not(.is-narrow) {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 280px !important; // Fixed width for the menu
+      min-height: 100vh; // Full height
+      background-color: var(--bulma-scheme-main); // Use theme background
+      box-shadow: 5px 0 15px rgba(0, 0, 0, 0.2);
+      padding: 1rem !important;
+    }
+  }
+}
+
+// --- Mobile Paginator Styles ---
+@media screen and (max-width: 768px) {
+  .pagination {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    max-width: 100%;
+    /* Ensure container respects parent width */
+    margin: 1rem 0 !important;
+    gap: 0.5rem;
+
+    .pagination-previous,
+    .pagination-next {
+      flex-grow: 1;
+      flex-shrink: 1;
+      flex-basis: 0;
+      margin: 0 !important;
+      width: auto !important;
+      min-width: 0;
+      /* Reduce padding to save space on small screens */
+      padding-left: 0.25rem !important;
+      padding-right: 0.25rem !important;
+      text-align: center;
+      justify-content: center;
+      /* Handle text overflow gracefully */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pagination-list {
+      display: none !important;
+    }
+  }
+}
+
+// --- Audiobook Grid Styles ---
+
+.audiobook-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  // Specific styling for this card type (overriding generic .card)
+  border-radius: 0.75rem;
+  box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1);
+  transition: transform 0.2s ease;
+
+  overflow: hidden;
+  /* Clips the scaled 'ambilight' background */
+  width: 100%;
+  max-width: 100%;
+  margin-inline: auto;
+
+  &:hover {
+    // Optional: Add hover effect if desired since transition is defined
+    transform: translateY(-4px);
+  }
+}
+
+.audiobook-cover-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 1/1;
+  max-height: 50vh;
+  margin: 0 auto;
+}
+
+.audiobook-cover-blur {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) saturate(150%);
+  transform: scale(1.1);
+  /* Slightly zoomed to hide blur edges */
+  opacity: 0.8;
+  z-index: 0;
+}
+
+.audiobook-cover-front {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Ensures the whole book is seen */
+  z-index: 1;
+  backdrop-filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.5));
+}
+
+.audiobook-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  /* Allows text truncation to work inside flex */
+}
+
+.audiobook-info {
+  overflow: hidden;
+}
+
+.audiobook-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audiobook-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 8;
+  line-clamp: 8;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// --- Audiobook Table Styles ---
+
+.audiobook-table-row {
+  td {
+    vertical-align: middle;
+  }
+
+  .cover-cell {
+    width: 112px;
+  }
+
+  .table-cover-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px;
+  }
+
+  .table-cover-blur {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(10px) saturate(150%);
+    transform: scale(1.2);
+    opacity: 0.5;
+    z-index: 0;
+  }
+
+  .table-cover-front {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    z-index: 1;
+  }
+}
+
+.ad-container {
+  width: 320px;
+  height: 100px;
+}
+
+@media (min-width: 500px) {
+  .ad-container {
+    width: 468px;
+    height: 60px;
+  }
+}
+
+@media (min-width: 800px) {
+  .ad-container {
+    width: 728px;
+    height: 90px;
+  }
+}
